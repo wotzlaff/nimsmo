@@ -1,4 +1,5 @@
 import std/[random, math, sequtils, stats, strformat, sugar]
+import lrucache
 
 randomize(42)
 
@@ -23,7 +24,7 @@ let xsqr = collect:
       xisqr += xik * xik
     xisqr
 
-proc kernel(i: int): seq[float] =
+proc rawKernel(i: int): seq[float] =
   let xi = x[i]
   return collect:
     for j in 0..<x.len:
@@ -32,6 +33,20 @@ proc kernel(i: int): seq[float] =
       for k in 0..<xi.len:
         dsqr -= 2.0 * xi[k] * xj[k]
       exp(-gamma * dsqr)
+
+let cache = newLRUCache[int, seq[float64]](100)
+var
+  accesses = 0
+  misses = 0
+proc kernel(i: int): seq[float] =
+  accesses += 1
+  if i in cache:
+    cache[i]
+  else:
+    misses += 1
+    let val = rawKernel(i)
+    cache[i] = val
+    val
 
 # compute diagonal
 let kdiag = newSeqWith[float64](n, 1.0)
@@ -86,6 +101,7 @@ for step in 1..1000:
       j1 = l
       gmin = gl
 
+  # determine working set
   let (i, j, ki, kj) = (
     let
       ki0 = kernel(i0)
@@ -114,21 +130,25 @@ for step in 1..1000:
             let
               qi0l = ki0i0 + kll - 2.0 * ki0[l]
               pi0l = gi0 - gl
-              ti0l = min(lmbda * pi0l / max(qi0l, regParam), min(ti0Max, dUp[l]))
-              di0l = ti0l * (0.5 / lmbda * qi0l * ti0l + pi0l)
-            if di0l > dmax0:
-              j0 = l
-              dmax0 = di0l
+            if pi0l > 0.0:
+              let
+                ti0l = min(lmbda * pi0l / max(qi0l, regParam), min(ti0Max, dUp[l]))
+                di0l = ti0l * (0.5 / lmbda * qi0l * ti0l + pi0l)
+              if di0l > dmax0:
+                j0 = l
+                dmax0 = di0l
           if dDn[l] > 0.0:
             let
               qj1l = kj1j1 + kll - 2.0 * kj1[l]
-              pj1l = gj1 - gl
-              tj1l = min(lmbda * pj1l / max(qj1l, regParam), min(tj1Max, dDn[l]))
-              dj1l = tj1l * (0.5 / lmbda * qj1l * tj1l + pj1l)
-            if dj1l > dmax1:
-              i1 = l
-              dmax1 = dj1l
-        if dmax0 > dmax0:
+              pj1l = gl - gj1
+            if pj1l > 0.0:
+              let
+                tj1l = min(lmbda * pj1l / max(qj1l, regParam), min(tj1Max, dDn[l]))
+                dj1l = tj1l * (0.5 / lmbda * qj1l * tj1l + pj1l)
+              if dj1l > dmax1:
+                i1 = l
+                dmax1 = dj1l
+        if dmax0 > dmax1:
           (i0, j0, ki0, kernel(j0))
         else:
           (i1, j1, kernel(i1), kj1)
@@ -152,7 +172,8 @@ for step in 1..1000:
       objPrimal = 0.5 / lmbda * reg + lossPrimal
       objDual = 0.5 / lmbda * reg + lossDual
       gap = objPrimal + objDual
-    echo fmt"{step:10d} {pij:10.6f} {gap:10.6f} {objPrimal:10f} {-objDual:10f}"
+      cacheProps = fmt"{misses:9d} of {accesses:9d} = {misses / accesses * 100:6.1f}%"
+    echo fmt"{step:10d} {pij:10.6f} {gap:10.6f} {objPrimal:10f} {-objDual:10f} {cacheProps}"
 
   # check convergence
   if pij < tol:
