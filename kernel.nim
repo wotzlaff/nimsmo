@@ -1,5 +1,5 @@
 import lrucache
-import std/[math, sugar, strformat]
+import std/[math, sugar, strformat, sequtils]
 
 type
   Data = seq[seq[float64]]
@@ -42,8 +42,8 @@ proc compute(k: Kernel, i: int): KernelRow =
     for j in 0..<k.size:
       let xj = k.x[j]
       var dsqr = k.xsqr[i] + k.xsqr[j]
-      for k in 0..<xi.len:
-        dsqr -= 2.0 * xi[k] * xj[k]
+      for (xik, xjk) in zip(xi, xj):
+        dsqr -= 2.0 * xik * xjk
       exp(-k.gamma * dsqr)
   KernelRow(data: data)
 
