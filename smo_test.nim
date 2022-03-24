@@ -26,6 +26,6 @@ when isMainModule:
   let y = collect:
     for yi in yr:
       if yi > ym: +1.0 else: -1.0
-  let res = smo(k, y, lmbda, verbose=100)
+  let res = smo(k, y, lmbda, verbose=1000)
   echo fmt"It took {res.steps} steps in {res.time:.1f} seconds..."
   echo k.cacheSummary()

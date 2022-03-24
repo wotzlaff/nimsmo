@@ -42,7 +42,7 @@ proc newKernel*(x: Data, gamma: float64, cap: int): Kernel =
 proc compute(k: Kernel, i: int): KernelRow =
   let xi = k.x[i]
   let data = collect(newSeqOfCap(k.size)):
-    for j in 0..<k.size:
+    for j in k.activeSet:
       let xj = k.x[j]
       var dsqr = k.xsqr[i] + k.xsqr[j]
       for (xik, xjk) in zip(xi, xj):
@@ -59,6 +59,8 @@ proc `[]`*(k: Kernel, i: int): KernelRow =
 
 proc restrict*(k: Kernel, activeSet: seq[int]) =
   k.activeSet = activeSet
+  # TODO: restrict the available data?
+  k.cache.clear()
 
 proc diag*(k: Kernel, i: int): float64 =
   1.0

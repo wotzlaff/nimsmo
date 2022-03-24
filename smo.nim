@@ -1,4 +1,4 @@
-import std/[sequtils, strformat, times]
+import std/[algorithm, sequtils, strformat, times, sugar]
 
 type Result* = object
   a*: seq[float64]
@@ -25,6 +25,8 @@ proc smo*[K](
   secondOrder: bool = true;
   verbose: int = 0;
   maxSteps: int = 1_000_000_000;
+  shrinkingPeriod: int = 1000;
+  shrinkingThreshold: float = 1.0;
 ): Result =
   # initialize
   let
@@ -48,8 +50,16 @@ proc smo*[K](
 
   block mainPart:
     for step in 1..maxSteps:
-      if step mod 1000 == 0:
-        echo "Shrinking..."
+      if shrinkingPeriod > 0 and step mod shrinkingPeriod == 0:
+        activeSet = collect:
+          for l in activeSet:
+            let
+              glb = g[l] + b
+              fixUp = dUp[l] == 0.0 and glb < -shrinkingThreshold * sqrt(violation)
+              fixDn = dDn[l] == 0.0 and glb > +shrinkingThreshold * sqrt(violation)
+            if not (fixUp or fixDn):
+              l
+        k.restrict(activeSet)
 
       # find max violation pair
       var
@@ -82,7 +92,7 @@ proc smo*[K](
           reg = 0.0
           lossPrimal = 0.0
           lossDual = 0.0
-        for l in activeSet:
+        for l in 0..<n:
           reg += ka[l] * a[l]
           lossPrimal += max(0.0, 1.0 - y[l] * (ka[l] + b))
           lossDual -= y[l] * a[l]
@@ -91,17 +101,29 @@ proc smo*[K](
           objDual = 0.5 * reg + lossDual
           gap = objPrimal + objDual
           dt = cpuTime() - t0
-        echo fmt"{step:10d} {dt:10.2f} {violation:10.6f} {gap:10.6f} {objPrimal:10f} {-objDual:10f}"
+        echo fmt"{step:10d} {dt:10.2f} {violation:10.6f} {gap:10.6f} {objPrimal:10f} {-objDual:10f} {activeSet.len:8d} of {y.len:8d}"
 
       # check convergence
       if optimal:
-        let dt = cpuTime() - t0
-        result.steps = step
-        result.time = dt
-        result.violation = violation
-        echo fmt"done in {step} steps and {dt:.2f} seconds"
-        break mainPart
-      
+        if activeSet.len < n:
+          echo "Reactivate..."
+          activeSet = (0..<n).toSeq()
+          k.restrict(activeSet)
+          ka.fill(0.0)
+          for l in 0..<n:
+            let al = a[l]
+            if al != 0.0:
+              let kl = k[l]
+              for r in 0..<n:
+                ka[r] += al / lmbda * kl[r]
+          continue
+        else:
+          let dt = cpuTime() - t0
+          result.steps = step
+          result.time = dt
+          result.violation = violation
+          echo fmt"done in {step} steps and {dt:.2f} seconds"
+          break mainPart
 
       # determine working set
       let (iIdx, jIdx, ki, kj) = (
