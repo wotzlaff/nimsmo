@@ -114,7 +114,7 @@ for step in 1..1000:
             let
               qi0l = ki0i0 + kll - 2.0 * ki0[l]
               pi0l = gi0 - gl
-              ti0l = min(lmbda * pi0l / qi0l, min(ti0Max, dUp[l]))
+              ti0l = min(lmbda * pi0l / max(qi0l, regParam), min(ti0Max, dUp[l]))
               di0l = ti0l * (0.5 / lmbda * qi0l * ti0l + pi0l)
             if di0l > dmax0:
               j0 = l
@@ -123,7 +123,7 @@ for step in 1..1000:
             let
               qj1l = kj1j1 + kll - 2.0 * kj1[l]
               pj1l = gj1 - gl
-              tj1l = min(lmbda * pj1l / qj1l, min(tj1Max, dDn[l]))
+              tj1l = min(lmbda * pj1l / max(qj1l, regParam), min(tj1Max, dDn[l]))
               dj1l = tj1l * (0.5 / lmbda * qj1l * tj1l + pj1l)
             if dj1l > dmax1:
               i1 = l
