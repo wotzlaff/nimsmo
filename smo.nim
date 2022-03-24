@@ -1,10 +1,10 @@
-import std/[random, math, sequtils, stats, strformat, sugar]
+import std/[random, math, sequtils, stats, strformat, sugar, times]
 import lrucache
 
 randomize(42)
 
 # define training set
-let n = 10
+let n = 10000
 let nft = 5
 let x = collect:
   for i in 0..<n:
@@ -34,7 +34,7 @@ proc rawKernel(i: int): seq[float] =
         dsqr -= 2.0 * xi[k] * xj[k]
       exp(-gamma * dsqr)
 
-let cache = newLRUCache[int, seq[float64]](100)
+let cache = newLRUCache[int, seq[float64]](200)
 var
   accesses = 0
   misses = 0
@@ -64,10 +64,10 @@ let y = collect:
 
 # set parameters
 let
-  tol = 1e-8
+  tol = 1e-4
   regParam = 1e-10
   secondOrder = true
-  verbose = 10
+  verbose = 100
 
 # initialize
 var
@@ -76,6 +76,8 @@ var
   g = newSeq[float64](n)
   dUp = newSeq[float64](n)
   dDn = newSeq[float64](n)
+  activeSet = (0..<n).toSeq()
+let t0 = cpuTime()
 
 for l in 0..<n:
   if y[l] > 0:
@@ -83,14 +85,14 @@ for l in 0..<n:
   else:
     dDn[l] = 1.0
 
-for step in 1..1000:
+for step in 1..100000:
   # find max violation pair
   var
     gmin = +Inf
     gmax = -Inf
     i0 = -1
     j1 = -1
-  for l in 0..<n:
+  for l in activeSet:
     let gl = ka[l] / lmbda - y[l]
     g[l] = gl
 
@@ -122,7 +124,7 @@ for step in 1..1000:
           kj1j1 = kj1[j1]
           ti0Max = dDn[i0]
           tj1Max = dUp[j1]
-        for l in 0..<n:
+        for l in activeSet:
           let
             gl = g[l]
             kll = kdiag[l]
@@ -164,7 +166,7 @@ for step in 1..1000:
       reg = 0.0
       lossPrimal = 0.0
       lossDual = 0.0
-    for l in 0..<n:
+    for l in activeSet:
       reg += ka[l] * a[l]
       lossPrimal += max(0.0, 1.0 - y[l] * (ka[l] / lmbda + b))
       lossDual -= y[l] * a[l]
@@ -173,11 +175,13 @@ for step in 1..1000:
       objDual = 0.5 / lmbda * reg + lossDual
       gap = objPrimal + objDual
       cacheProps = fmt"{misses:9d} of {accesses:9d} = {misses / accesses * 100:6.1f}%"
-    echo fmt"{step:10d} {pij:10.6f} {gap:10.6f} {objPrimal:10f} {-objDual:10f} {cacheProps}"
+      dt = cpuTime() - t0
+    echo fmt"{step:10d} {dt:10.2f} {pij:10.6f} {gap:10.6f} {objPrimal:10f} {-objDual:10f} {cacheProps}"
 
   # check convergence
   if pij < tol:
-    echo fmt"done in {step} steps"
+    let dt = cpuTime() - t0
+    echo fmt"done in {step} steps and {dt:.2f} seconds"
     break
   
   # find optimal step size
