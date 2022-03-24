@@ -1,5 +1,5 @@
 import std/[random, math, sequtils, stats, strformat, sugar, times]
-import lrucache
+import kernel
 
 randomize(42)
 
@@ -16,51 +16,7 @@ let x = collect:
 let gamma = 1.5
 let lmbda = 0.01
 
-# define kernel function
-let xsqr = collect:
-  for xi in x:
-    var xisqr = 0.0
-    for xik in xi:
-      xisqr += xik * xik
-    xisqr
-
-type KernelRow = ref object
-  data: seq[float64]
-
-proc `[]`(r: KernelRow, i: int): float64 =
-  r.data[i]
-
-proc rawKernel(i: int): KernelRow =
-  let xi = x[i]
-  let data = collect(newSeqOfCap(x.len)):
-    for j in 0..<x.len:
-      let xj = x[j]
-      var dsqr = xsqr[i] + xsqr[j]
-      for k in 0..<xi.len:
-        dsqr -= 2.0 * xi[k] * xj[k]
-      exp(-gamma * dsqr)
-  KernelRow(data: data)
-
-type Kernel = ref object
-  cache: LruCache[int, KernelRow]
-  accesses: int
-  misses: int
-
-proc newKernel(cap: int): Kernel =
-  result = new(Kernel)
-  result.cache = newLRUCache[int, KernelRow](cap)
-
-proc `[]`(k: Kernel, i: int): KernelRow =
-  k.accesses += 1
-  if i notin k.cache:
-    k.misses += 1
-    k.cache[i] = rawKernel(i)
-  k.cache[i]
-
-proc diag(k: Kernel, i: int): float64 =
-  1.0
-
-let kernel = newKernel(200)
+let k = newKernel(x, gamma, 200)
 
 let yr = collect:
   for xi in x:
@@ -117,8 +73,8 @@ for step in 1..100000:
   # determine working set
   let (i, j, ki, kj) = (
     let
-      ki0 = kernel[i0]
-      kj1 = kernel[j1]
+      ki0 = k[i0]
+      kj1 = k[j1]
     if not secondOrder:
       (i0, j1, ki0, kj1)
     else:
@@ -138,7 +94,7 @@ for step in 1..100000:
         for l in activeSet:
           let
             gl = g[l]
-            kll = kernel.diag(l)
+            kll = k.diag(l)
           if dUp[l] > 0.0:
             let
               qi0l = ki0i0 + kll - 2.0 * ki0[l]
@@ -162,9 +118,9 @@ for step in 1..100000:
                 i1 = l
                 dmax1 = dj1l
         if dmax0 > dmax1:
-          (i0, j0, ki0, kernel[j0])
+          (i0, j0, ki0, k[j0])
         else:
-          (i1, j1, kernel[i1], kj1)
+          (i1, j1, k[i1], kj1)
   )
     
   let
