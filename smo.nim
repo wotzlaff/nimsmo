@@ -55,7 +55,7 @@ proc smo*[K](
         i0 = -1
         j1 = -1
       for l in activeSet:
-        let gl = ka[l] / lmbda - y[l]
+        let gl = ka[l] - y[l]
         g[l] = gl
 
         if dDn[l] > 0.0 and gl > gmax:
@@ -117,11 +117,11 @@ proc smo*[K](
           lossDual = 0.0
         for l in activeSet:
           reg += ka[l] * a[l]
-          lossPrimal += max(0.0, 1.0 - y[l] * (ka[l] / lmbda + b))
+          lossPrimal += max(0.0, 1.0 - y[l] * (ka[l] + b))
           lossDual -= y[l] * a[l]
         let
-          objPrimal = 0.5 / lmbda * reg + lossPrimal
-          objDual = 0.5 / lmbda * reg + lossDual
+          objPrimal = 0.5 * reg + lossPrimal
+          objDual = 0.5 * reg + lossDual
           gap = objPrimal + objDual
           dt = cpuTime() - t0
         echo fmt"{step:10d} {dt:10.2f} {violation:10.6f} {gap:10.6f} {objPrimal:10f} {-objDual:10f}"
@@ -152,8 +152,9 @@ proc smo*[K](
       a[j] += tij
       dDn[j] += tij
       dUp[j] -= tij
+      let tijL = tij / lmbda
       for l in 0..<n:
-        ka[l] += tij * (kj[l] - ki[l])
+        ka[l] += tijL * (kj[l] - ki[l])
 
     let dt = cpuTime() - t0
     result.steps = maxSteps
