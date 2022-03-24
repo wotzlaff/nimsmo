@@ -26,7 +26,7 @@ proc prepare(k: Kernel) =
         xisqr += xik * xik
       xisqr
 
-proc size(k: Kernel): int =
+proc size*(k: Kernel): int =
   k.x.len
 
 proc newKernel*(x: Data, gamma: float64, cap: int): Kernel =
