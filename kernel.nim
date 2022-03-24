@@ -1,5 +1,5 @@
 import lrucache
-import std/[math, sugar]
+import std/[math, sugar, strformat]
 
 type
   Data = seq[seq[float64]]
@@ -56,3 +56,6 @@ proc `[]`*(k: Kernel, i: int): KernelRow =
 
 proc diag*(k: Kernel, i: int): float64 =
   1.0
+
+proc cacheSummary*(k: Kernel): string =
+  fmt"{k.misses} of {k.accesses} = {k.misses / k.accesses * 100:.1f}%"

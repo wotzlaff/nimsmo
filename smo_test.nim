@@ -17,7 +17,7 @@ when isMainModule:
   # define parameters
   let gamma = 1.5
   let lmbda = 0.01
-  let k = newKernel(x, gamma, 200)
+  let k = newKernel(x, gamma, 500)
 
   let yr = collect:
     for xi in x:
@@ -31,3 +31,4 @@ when isMainModule:
         -1.0
   let res = smo(k, y, lmbda, verbose=100)
   echo fmt"It took {res.steps} steps in {res.time:.1f} seconds..."
+  echo k.cacheSummary()
