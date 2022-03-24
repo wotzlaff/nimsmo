@@ -8,6 +8,15 @@ type Result* = object
   violation*: float64
   gap*: float64
 
+proc computeDesc(kii, kij, kjj, p, tMax0, tMax1, lmbda, regParam: float64): float64 {.inline.} =
+  if p <= 0.0 or tMax1 == 0.0:
+    return 0.0
+  let
+    q = kii + kjj - 2.0 * kij
+    t = min(lmbda * p / max(q, regParam), min(tMax0, tMax1))
+  return t * (0.5 / lmbda * q * t + p)
+
+
 proc smo*[K](
   k: K, y: seq[float64],
   lmbda: float64;
@@ -81,32 +90,19 @@ proc smo*[K](
               let
                 gl = g[l]
                 kll = k.diag(l)
-              if dUp[l] > 0.0:
-                let
-                  qi0l = ki0i0 + kll - 2.0 * ki0[l]
-                  pi0l = gi0 - gl
-                if pi0l > 0.0:
-                  let
-                    ti0l = min(lmbda * pi0l / max(qi0l, regParam), min(ti0Max, dUp[l]))
-                    di0l = ti0l * (0.5 / lmbda * qi0l * ti0l + pi0l)
-                  if di0l > dmax0:
-                    j0 = l
-                    dmax0 = di0l
-              if dDn[l] > 0.0:
-                let
-                  qj1l = kj1j1 + kll - 2.0 * kj1[l]
-                  pj1l = gl - gj1
-                if pj1l > 0.0:
-                  let
-                    tj1l = min(lmbda * pj1l / max(qj1l, regParam), min(tj1Max, dDn[l]))
-                    dj1l = tj1l * (0.5 / lmbda * qj1l * tj1l + pj1l)
-                  if dj1l > dmax1:
-                    i1 = l
-                    dmax1 = dj1l
-            if dmax0 > dmax1:
-              (i0, j0, ki0, k[j0])
-            else:
-              (i1, j1, k[i1], kj1)
+                pi0l = gi0 - gl
+                pj1l = gl - gj1
+              if dUp[l] > 0.0 and pi0l > 0.0:
+                let di0l = computeDesc(ki0i0, ki0[l], kll, pi0l, ti0Max, dUp[l], lmbda, regParam)
+                if di0l > dmax0:
+                  j0 = l
+                  dmax0 = di0l
+              if dDn[l] > 0.0 and pj1l > 0.0:
+                let dj1l = computeDesc(kj1j1, kj1[l], kll, pj1l, tj1Max, dDn[l], lmbda, regParam)
+                if dj1l > dmax1:
+                  i1 = l
+                  dmax1 = dj1l
+            if dmax0 > dmax1: (i0, j0, ki0, k[j0]) else: (i1, j1, k[i1], kj1)
       )
       
       violation = g[i0] - g[j1]
