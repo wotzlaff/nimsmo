@@ -3,13 +3,15 @@ import std/[math, sugar, strformat, sequtils]
 
 type
   Data = seq[seq[float64]]
+
   KernelRow = ref object
     data: seq[float64]
+
   Kernel = ref object
     x: Data
     xsqr: seq[float64]
     gamma: float64
-
+    activeSet: seq[int]
     cache: LruCache[int, KernelRow]
     accesses: int
     misses: int
@@ -27,11 +29,12 @@ proc prepare(k: Kernel) =
       xisqr
 
 proc size*(k: Kernel): int =
-  k.x.len
+  k.activeSet.len
 
 proc newKernel*(x: Data, gamma: float64, cap: int): Kernel =
   result = new(Kernel)
   result.x = x
+  result.activeSet = (0..<x.len).toSeq()
   result.gamma = gamma
   result.cache = newLRUCache[int, KernelRow](cap)
   result.prepare()
@@ -53,6 +56,9 @@ proc `[]`*(k: Kernel, i: int): KernelRow =
     k.misses += 1
     k.cache[i] = k.compute(i)
   k.cache[i]
+
+proc restrict*(k: Kernel, activeSet: seq[int]) =
+  k.activeSet = activeSet
 
 proc diag*(k: Kernel, i: int): float64 =
   1.0
