@@ -24,29 +24,33 @@ let xsqr = collect:
       xisqr += xik * xik
     xisqr
 
-proc rawKernel(i: int): seq[float] =
+type KernelRow = ref object
+  data: seq[float64]
+
+proc `[]`(r: KernelRow, i: int): float64 =
+  r.data[i]
+
+proc rawKernel(i: int): KernelRow =
   let xi = x[i]
-  return collect:
+  let data = collect(newSeqOfCap(x.len)):
     for j in 0..<x.len:
       let xj = x[j]
       var dsqr = xsqr[i] + xsqr[j]
       for k in 0..<xi.len:
         dsqr -= 2.0 * xi[k] * xj[k]
       exp(-gamma * dsqr)
+  KernelRow(data: data)
 
-let cache = newLRUCache[int, seq[float64]](200)
+let cache = newLRUCache[int, KernelRow](200)
 var
   accesses = 0
   misses = 0
-proc kernel(i: int): seq[float] =
+proc kernel(i: int): KernelRow =
   accesses += 1
-  if i in cache:
-    cache[i]
-  else:
+  if i notin cache:
     misses += 1
-    let val = rawKernel(i)
-    cache[i] = val
-    val
+    cache[i] = rawKernel(i)
+  cache[i]
 
 # compute diagonal
 let kdiag = newSeqWith[float64](n, 1.0)
