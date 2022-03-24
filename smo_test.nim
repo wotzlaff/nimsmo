@@ -29,4 +29,5 @@ when isMainModule:
         +1.0
       else:
         -1.0
-  smo(k, y, lmbda, verbose=100)
+  let res = smo(k, y, lmbda, verbose=100)
+  echo fmt"It took {res.steps} steps in {res.time:.1f} seconds..."
