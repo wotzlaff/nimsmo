@@ -41,19 +41,26 @@ proc rawKernel(i: int): KernelRow =
       exp(-gamma * dsqr)
   KernelRow(data: data)
 
-let cache = newLRUCache[int, KernelRow](200)
-var
-  accesses = 0
-  misses = 0
-proc kernel(i: int): KernelRow =
-  accesses += 1
-  if i notin cache:
-    misses += 1
-    cache[i] = rawKernel(i)
-  cache[i]
+type Kernel = ref object
+  cache: LruCache[int, KernelRow]
+  accesses: int
+  misses: int
 
-# compute diagonal
-let kdiag = newSeqWith[float64](n, 1.0)
+proc newKernel(cap: int): Kernel =
+  result = new(Kernel)
+  result.cache = newLRUCache[int, KernelRow](cap)
+
+proc `[]`(k: Kernel, i: int): KernelRow =
+  k.accesses += 1
+  if i notin k.cache:
+    k.misses += 1
+    k.cache[i] = rawKernel(i)
+  k.cache[i]
+
+proc diag(k: Kernel, i: int): float64 =
+  1.0
+
+let kernel = newKernel(200)
 
 let yr = collect:
   for xi in x:
@@ -110,8 +117,8 @@ for step in 1..100000:
   # determine working set
   let (i, j, ki, kj) = (
     let
-      ki0 = kernel(i0)
-      kj1 = kernel(j1)
+      ki0 = kernel[i0]
+      kj1 = kernel[j1]
     if not secondOrder:
       (i0, j1, ki0, kj1)
     else:
@@ -131,7 +138,7 @@ for step in 1..100000:
         for l in activeSet:
           let
             gl = g[l]
-            kll = kdiag[l]
+            kll = kernel.diag(l)
           if dUp[l] > 0.0:
             let
               qi0l = ki0i0 + kll - 2.0 * ki0[l]
@@ -155,9 +162,9 @@ for step in 1..100000:
                 i1 = l
                 dmax1 = dj1l
         if dmax0 > dmax1:
-          (i0, j0, ki0, kernel(j0))
+          (i0, j0, ki0, kernel[j0])
         else:
-          (i1, j1, kernel(i1), kj1)
+          (i1, j1, kernel[i1], kj1)
   )
     
   let
@@ -178,9 +185,8 @@ for step in 1..100000:
       objPrimal = 0.5 / lmbda * reg + lossPrimal
       objDual = 0.5 / lmbda * reg + lossDual
       gap = objPrimal + objDual
-      cacheProps = fmt"{misses:9d} of {accesses:9d} = {misses / accesses * 100:6.1f}%"
       dt = cpuTime() - t0
-    echo fmt"{step:10d} {dt:10.2f} {pij:10.6f} {gap:10.6f} {objPrimal:10f} {-objDual:10f} {cacheProps}"
+    echo fmt"{step:10d} {dt:10.2f} {pij:10.6f} {gap:10.6f} {objPrimal:10f} {-objDual:10f}"
 
   # check convergence
   if pij < tol:
