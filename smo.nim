@@ -55,8 +55,9 @@ proc smo*[K](
           for l in activeSet:
             let
               glb = g[l] + b
-              fixUp = dUp[l] == 0.0 and glb < -shrinkingThreshold * sqrt(violation)
-              fixDn = dDn[l] == 0.0 and glb > +shrinkingThreshold * sqrt(violation)
+              glbSqr = glb * glb
+              fixUp = dUp[l] == 0.0 and glb < 0 and glbSqr > shrinkingThreshold * violation
+              fixDn = dDn[l] == 0.0 and glb > 0 and glbSqr > shrinkingThreshold * violation
             if not (fixUp or fixDn):
               l
         k.restrict(activeSet)
