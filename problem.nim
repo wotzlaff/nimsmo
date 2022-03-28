@@ -26,7 +26,6 @@ proc objectives*[S](problem: Problem, state: S): (float64, float64) {.inline.} =
 
 
 proc size*(problem: Problem): int {.inline.} = problem.y.len
-# proc activeSize*(problem: Problem): int {.inline.} = problem.k.activeSize
 proc isShrunk*(problem: Problem): bool {.inline.} = problem.k.activeSize < problem.size
 
 proc grad*[S](problem: Problem, state: S, l: int): float64 {.inline.} =
@@ -37,6 +36,9 @@ proc upperBound*(problem: Problem, l: int): float64 {.inline.} =
 
 proc lowerBound*(problem: Problem, l: int): float64 {.inline.} =
   if problem.y[l] > 0.0: 0.0 else: -1.0
+
+proc kernelRow*(problem: Problem, i: int): auto = problem.k.getRow(i)
+proc kernelDiag*(problem: Problem, i: int): auto {.inline.} = problem.k.diag(i)
 
 
 proc shrink*[S](problem: Problem, state: S, shrinkingThreshold: float64) =
@@ -63,6 +65,3 @@ proc unshrink*[S](problem: Problem, state: S) {.inline.} =
       for r in 0..<n:
         state.ka[r] += al / problem.lmbda * kl[r]
   state.activeSet = (0..<n).toSeq()
-
-proc kernelRow*(problem: Problem, i: int): auto = problem.k.getRow(i)
-proc kernelDiag*(problem: Problem, i: int): auto {.inline.} = problem.k.diag(i)

@@ -2,7 +2,6 @@ import std/[random, math, sequtils, stats, strformat, sugar, times]
 import smo
 import problem
 import kernel/[gaussian, cache]
-export cache
 
 when isMainModule:
   randomize(42)
