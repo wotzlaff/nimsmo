@@ -3,7 +3,7 @@ import std/[algorithm, sequtils, strformat, times, sugar]
 type
   State = ref object
     a, g, ka, dUp, dDn: seq[float64]
-    b, violation, value: float64
+    b, violation, gap, value: float64
     activeSet: seq[int]
 
   Problem[K] = ref object
@@ -19,18 +19,19 @@ type
     time*: float64
     violation*: float64
     gap*: float64
+    value*: float64
 
-proc size[K](problem: Problem[K]): int {.inline.} = problem.y.len
-# proc activeSize[K](problem: Problem[K]): int {.inline.} = problem.k.activeSize
-proc isShrunk[K](problem: Problem[K]): bool {.inline.} = problem.k.activeSize < problem.size
+proc size*[K](problem: Problem[K]): int {.inline.} = problem.y.len
+# proc activeSize*[K](problem: Problem[K]): int {.inline.} = problem.k.activeSize
+proc isShrunk*[K](problem: Problem[K]): bool {.inline.} = problem.k.activeSize < problem.size
 
-proc grad[K](problem: Problem[K], state: State, l: int): float64 {.inline.} =
+proc grad*[K](problem: Problem[K], state: State, l: int): float64 {.inline.} =
   state.ka[l] - problem.y[l]
 
-proc upperBound[K](problem: Problem[K], l: int): float64 {.inline.} =
+proc upperBound*[K](problem: Problem[K], l: int): float64 {.inline.} =
   if problem.y[l] > 0.0: 1.0 else: 0.0
 
-proc lowerBound[K](problem: Problem[K], l: int): float64 {.inline.} =
+proc lowerBound*[K](problem: Problem[K], l: int): float64 {.inline.} =
   if problem.y[l] > 0.0: 0.0 else: -1.0
 
 proc findMVP[P](problem: P, state: var State): (int, int) {.inline.} =
@@ -230,12 +231,11 @@ proc smo*[K](
       if verbose > 0 and (step mod verbose == 0 or optimal):
         let dt = cpuTime() - t0
         if logObjective:
-          let
-            (objPrimal, objDual) = problem.objectives(state)
-            gap = objPrimal + objDual
-          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {gap:10.6f} {objPrimal:10f} {-objDual:10f} {state.value:10f} {state.activeSet.len:8d} of {y.len:8d}"
+          let (objPrimal, objDual) = problem.objectives(state)
+          state.gap = objPrimal + objDual
+          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.gap:10.6f} {objPrimal:10f} {-objDual:10f} {state.value:10f} {state.activeSet.len:8d} of {problem.size:8d}"
         else:
-          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.value:10f} {state.activeSet.len:8d} of {y.len:8d}"
+          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.value:10f} {state.activeSet.len:8d} of {problem.size:8d}"
 
       # check convergence
       if optimal:
@@ -243,11 +243,7 @@ proc smo*[K](
           problem.unshrink(state)
           continue
         else:
-          let dt = cpuTime() - t0
           result.steps = step
-          result.time = dt
-          result.violation = state.violation
-          echo fmt"done in {step} steps and {dt:.2f} seconds"
           break mainPart
 
       # determine working set
@@ -259,9 +255,10 @@ proc smo*[K](
       # solve subproblem and update
       problem.update(iIdx, jIdx, state)
 
-    let dt = cpuTime() - t0
     result.steps = maxSteps
-    result.time = dt
-    result.violation = state.violation
+  let dt = cpuTime() - t0
+  result.time = dt
+  result.violation = state.violation
   result.a = state.a
   result.b = state.b
+  result.value = state.value
