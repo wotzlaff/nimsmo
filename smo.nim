@@ -60,7 +60,7 @@ proc smo*[K](
               fixDn = dDn[l] == 0.0 and glb > 0 and glbSqr > shrinkingThreshold * violation
             if not (fixUp or fixDn):
               l
-        k.restrict(activeSet)
+        k.activeSet = activeSet
 
       # find max violation pair
       var
@@ -109,7 +109,7 @@ proc smo*[K](
         if activeSet.len < n:
           echo "Reactivate..."
           activeSet = (0..<n).toSeq()
-          k.restrict(activeSet)
+          k.activeSet = activeSet
           ka.fill(0.0)
           for l in 0..<n:
             let al = a[l]

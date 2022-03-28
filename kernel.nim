@@ -12,12 +12,15 @@ type
     xsqr: seq[float64]
     gamma: float64
     activeSet: seq[int]
+
+  # CachedKernel[K] = ref Object
     cache: LruCache[int, KernelRow]
+    # kernel: K
     accesses: int
     misses: int
 
 
-proc `[]`*(r: KernelRow, i: int): float64 =
+proc `[]`*(r: KernelRow, i: int): float64 {.inline.} =
   r.data[i]
 
 proc prepare(k: Kernel) =
@@ -28,7 +31,7 @@ proc prepare(k: Kernel) =
         xisqr += xik * xik
       xisqr
 
-proc size*(k: Kernel): int =
+proc size*(k: Kernel): int {.inline.} =
   k.activeSet.len
 
 proc newKernel*(x: Data, gamma: float64, cap: int): Kernel =
@@ -43,9 +46,8 @@ proc compute(k: Kernel, i: int): KernelRow =
   let xi = k.x[i]
   let data = collect(newSeqOfCap(k.size)):
     for j in k.activeSet:
-      let xj = k.x[j]
       var dsqr = k.xsqr[i] + k.xsqr[j]
-      for (xik, xjk) in zip(xi, xj):
+      for (xik, xjk) in zip(xi, k.x[j]):
         dsqr -= 2.0 * xik * xjk
       exp(-k.gamma * dsqr)
   KernelRow(data: data)
@@ -57,12 +59,12 @@ proc `[]`*(k: Kernel, i: int): KernelRow =
     k.cache[i] = k.compute(i)
   k.cache[i]
 
-proc restrict*(k: Kernel, activeSet: seq[int]) =
+proc `activeSet=`*(k: Kernel, activeSet: seq[int]) =
   k.activeSet = activeSet
   # TODO: restrict the available data?
   k.cache.clear()
 
-proc diag*(k: Kernel, i: int): float64 =
+proc diag*(k: Kernel, i: int): float64 {.inline.} =
   1.0
 
 proc cacheSummary*(k: Kernel): string =
