@@ -20,16 +20,27 @@ type
     violation*: float64
     gap*: float64
 
-proc size[K](problem: Problem[K]):int {.inline.} = problem.y.len
+proc size[K](problem: Problem[K]): int {.inline.} = problem.y.len
+# proc activeSize[K](problem: Problem[K]): int {.inline.} = problem.k.activeSize
+proc isShrunk[K](problem: Problem[K]): bool {.inline.} = problem.k.activeSize < problem.size
 
-proc findMVP[K](problem: Problem[K], state: var State): (int, int) {.inline.} =
+proc grad[K](problem: Problem[K], state: State, l: int): float64 {.inline.} =
+  state.ka[l] - problem.y[l]
+
+proc upperBound[K](problem: Problem[K], l: int): float64 {.inline.} =
+  if problem.y[l] > 0.0: 1.0 else: 0.0
+
+proc lowerBound[K](problem: Problem[K], l: int): float64 {.inline.} =
+  if problem.y[l] > 0.0: 0.0 else: -1.0
+
+proc findMVP[P](problem: P, state: var State): (int, int) {.inline.} =
   var
     gmin = +Inf
     gmax = -Inf
     i0Idx = -1
     j1Idx = -1
   for lIdx, l in state.activeSet:
-    let gl = state.ka[l] - problem.y[l]
+    let gl = problem.grad(state, l)
     state.g[l] = gl
 
     if state.dDn[l] > 0.0 and gl > gmax:
@@ -55,8 +66,8 @@ proc computeDesc(kii, kij, kjj, p, tMax0, tMax1, lmbda, regParam: float64): floa
   return t * (p - 0.5 / lmbda * q * t)
 
 
-proc findWS2[K](
-  problem: Problem[K],
+proc findWS2[P](
+  problem: P,
   i0Idx, j1Idx: int,
   state: var State,
 ): (int, int) {.inline.} =
@@ -106,8 +117,6 @@ proc findWS2[K](
   else:
     (i1Idx, j1Idx)
 
-
-proc isShrunk[K](problem: Problem[K]): bool {.inline.} = problem.k.activeSize < problem.size
 
 proc shrink[K](problem: Problem[K], state: var State, shrinkingThreshold: float64) =
   state.activeSet = collect:
@@ -162,8 +171,8 @@ proc update[K](problem: Problem[K], iIdx, jIdx: int, state: var State) {.inline.
     state.ka[l] += tijL * (kj[lIdx] - ki[lIdx])
 
 
-proc newState(y: seq[float64]): State =
-  let n = y.len
+proc newState[P](problem: P): State =
+  let n = problem.size
   result = State(
     a: newSeq[float64](n),
     ka: newSeq[float64](n),
@@ -172,10 +181,8 @@ proc newState(y: seq[float64]): State =
     dDn: newSeq[float64](n),
   )
   for l in 0..<n:
-    if y[l] > 0:
-      result.dUp[l] = 1.0
-    else:
-      result.dDn[l] = 1.0
+    result.dUp[l] = problem.upperBound(l)
+    result.dDn[l] = -problem.lowerBound(l)
   result.activeSet = (0..<n).toSeq()
 
 
@@ -208,8 +215,8 @@ proc smo*[K](
 ): Result =
   # initialize
   let t0 = cpuTime()
-  var state = newState(y)
   let problem = Problem[K](k: k, y: y, lmbda: lmbda, regParam: regParam)
+  var state = newState(problem)
   block mainPart:
     for step in 1..maxSteps:
       if shrinkingPeriod > 0 and step mod shrinkingPeriod == 0:
