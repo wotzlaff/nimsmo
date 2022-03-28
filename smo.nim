@@ -30,7 +30,7 @@ proc smo*[K](
 ): Result =
   # initialize
   let
-    n = k.size
+    n = k.activeSize
     t0 = cpuTime()
   var
     a = newSeq[float64](n)
@@ -60,7 +60,7 @@ proc smo*[K](
               fixDn = dDn[l] == 0.0 and glb > 0 and glbSqr > shrinkingThreshold * violation
             if not (fixUp or fixDn):
               l
-        k.activeSet = activeSet
+        k.restrictActive(activeSet)
 
       # find max violation pair
       var
@@ -106,10 +106,10 @@ proc smo*[K](
 
       # check convergence
       if optimal:
-        if activeSet.len < n:
+        if k.activeSize < n:
           echo "Reactivate..."
           activeSet = (0..<n).toSeq()
-          k.activeSet = activeSet
+          k.resetActive()
           ka.fill(0.0)
           for l in 0..<n:
             let al = a[l]

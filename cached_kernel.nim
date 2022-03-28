@@ -1,5 +1,5 @@
 import lrucache
-import std/[strformat]
+import std/strformat
 import kernel
 
 type
@@ -24,16 +24,20 @@ proc getRow*[K](k: CachedKernel[K], i: int): KernelRow =
     k.cache[i] = k.kernel.getRow(i)
   k.cache[i]
 
-proc `activeSet=`*[K](k: CachedKernel[K], activeSet: seq[int]) =
-  k.kernel.activeSet = activeSet
-  # TODO: restrict the available data?
+proc resetActive*[K](k: CachedKernel[K]) =
+  k.kernel.resetActive()
   k.cache.clear()
+
+proc restrictActive*[K](k: CachedKernel[K], activeSet: seq[int]) =
+  for (key, row) in k.cache.mitems:
+    row.restrict(k.kernel.activeSet, activeSet)
+  k.kernel.restrictActive(activeSet)
 
 proc diag*[K](k: CachedKernel[K], i: int): float64 {.inline.} =
   k.kernel.diag(i)
 
-proc size*[K](k: CachedKernel[K]): int {.inline.} =
-  k.kernel.size
+proc activeSize*[K](k: CachedKernel[K]): int {.inline.} =
+  k.kernel.activeSize
 
 proc cacheSummary*[K](k: CachedKernel[K]): string =
   fmt"{k.misses} of {k.accesses} = {k.misses / k.accesses * 100:.1f}%"

@@ -18,11 +18,24 @@ type
 proc `[]`*(r: KernelRow, i: int): float64 {.inline.} =
   r.data[i]
 
-proc size*(k: Kernel): int {.inline.} =
-  k.activeSet.len
+proc restrict*(row: KernelRow, activeOld, activeNew: seq[int]) =
+  var it0 = 0
+  row.data = collect:
+    for (idx, val) in zip(activeOld, row.data):
+      if it0 < activeNew.len and idx == activeNew[it0]:
+        it0 += 1
+        val
 
-proc `activeSet=`*(k: Kernel, activeSet: seq[int]) =
-  k.activeSet = activeSet
+proc resetActive*(k: Kernel) {.inline.} =
+  k.activeSet = (0..<k.x.len).toSeq()
+
+proc restrictActive*(k: Kernel, activeNew: seq[int]) {.inline.} =
+  k.activeSet = activeNew
+
+proc activeSet*(k: Kernel): seq[int] {.inline.} = k.activeSet
+
+proc activeSize*(k: Kernel): int {.inline.} =
+  k.activeSet.len
 
 proc prepare(k: GaussianKernel) =
   k.xsqr = collect:
@@ -35,14 +48,14 @@ proc prepare(k: GaussianKernel) =
 proc newGaussianKernel*(x: Data, gamma: float64): GaussianKernel =
   result = GaussianKernel(
     x: x,
-    activeSet: (0..<x.len).toSeq(),
     gamma: gamma
   )
+  result.resetActive()
   result.prepare()
 
 proc compute(k: GaussianKernel, i: int): KernelRow =
   let xi = k.x[i]
-  let data = collect(newSeqOfCap(k.size)):
+  let data = collect(newSeqOfCap(k.activeSize)):
     for j in k.activeSet:
       var dsqr = k.xsqr[i] + k.xsqr[j]
       for (xik, xjk) in zip(xi, k.x[j]):
