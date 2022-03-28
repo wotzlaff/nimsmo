@@ -15,7 +15,7 @@ type
     gap*: float64
     value*: float64
 
-proc findMVP[P](problem: P, state: var State): (int, int) {.inline.} =
+proc findMVP[P](problem: P, state: State): (int, int) {.inline.} =
   var
     gmin = +Inf
     gmax = -Inf
@@ -51,7 +51,7 @@ proc computeDesc(kii, kij, kjj, p, tMax0, tMax1, lmbda, regParam: float64): floa
 proc findWS2[P](
   problem: P,
   i0Idx, j1Idx: int,
-  state: var State,
+  state: State,
 ): (int, int) {.inline.} =
   let
     i0 = state.activeSet[i0Idx]
@@ -100,7 +100,7 @@ proc findWS2[P](
     (i1Idx, j1Idx)
 
 
-proc update[P](problem: P, iIdx, jIdx: int, state: var State) {.inline.} =
+proc update[P](problem: P, iIdx, jIdx: int, state: State) {.inline.} =
   let
     i = state.activeSet[iIdx]
     j = state.activeSet[jIdx]
