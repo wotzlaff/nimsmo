@@ -7,7 +7,7 @@ when isMainModule:
   randomize(42)
 
   # define training set
-  let n = 10000
+  let n = 20
   let nft = 5
   let x = collect:
     for i in 0..<n:
@@ -29,8 +29,8 @@ when isMainModule:
     for yi in yr:
       if yi > ym: +1.0 else: -1.0
   var p = newProblem(k, y, lmbda, 1e-10)
-  p.maxAsum = 0.5 * 1000.0
-  let res = smo(p, verbose=1000)
+  p.maxAsum = 0.5 * 0.5
+  let res = smo(p, verbose=1)
   echo fmt"It took {res.steps} steps in {res.time:.1f} seconds..."
   echo k.cacheSummary()
 

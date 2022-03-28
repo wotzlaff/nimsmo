@@ -16,7 +16,7 @@ type
     value*: float64
 
 
-proc findMVPWithSign[P](problem: P, state: State, sign: float64): (float64, int, int) {.inline.} =
+proc findMVPWithSign[P](problem: P, state: State, sign: float64): (float64, float64, int, int) {.inline.} =
   var
     gmin = +Inf
     gmax = -Inf
@@ -32,25 +32,25 @@ proc findMVPWithSign[P](problem: P, state: State, sign: float64): (float64, int,
     if problem.sign(l) * sign >= 0.0 and state.dUp[l] > 0.0 and gl < gmin:
       j1Idx = lIdx
       gmin = gl
-  (gmax - gmin, i0Idx, j1Idx)
-
-proc findMVPWithSign[P](problem: P, state: State): (float64, int, int) {.inline.} =
-  let
-    (pPos, iPos, jPos) = problem.findMVPWithSign(state, +1.0)
-    (pNeg, iNeg, jNeg) = problem.findMVPWithSign(state, -1.0)
-  if pPos > pNeg: (pPos, iPos, jPos) else: (pNeg, iNeg, jNeg)
+  (gmax - gmin, 0.5 * (gmax + gmin), i0Idx, j1Idx)
 
 proc findMVP[P](problem: P, state: State): (int, int) {.inline.} =
   let (violation, iIdx, jIdx) = if problem.maxAsum > 0.0 and state.asum == problem.maxAsum:
-    problem.findMVPWithSign(state)
+    let
+      (vPos, mPos, iPos, jPos) = problem.findMVPWithSign(state, +1.0)
+      (vNeg, mNeg, iNeg, jNeg) = problem.findMVPWithSign(state, -1.0)
+    # echo fmt"{-0.5 * (state.g[state.activeSet[iPos]] + state.g[state.activeSet[jPos]])}"
+    # echo fmt"{-0.5 * (state.g[state.activeSet[iNeg]] + state.g[state.activeSet[jNeg]])}"
+    # TODO: implement this for sum-constrained problem
+    if vPos > vNeg: (vPos, iPos, jPos) else: (vNeg, iNeg, jNeg)
   else:
-    problem.findMVPWithSign(state, 0.0)
+    let (v, mean, iIdx, jIdx) = problem.findMVPWithSign(state, 0.0)
+    state.b = -mean
+    (v, iIdx, jIdx)
   let
     i = state.activeSet[iIdx]
     j = state.activeSet[jIdx]
   state.violation = violation
-  # TODO: fix this for sum-constrained problem
-  state.b = -0.5 * (state.g[i] + state.g[j])
   (iIdx, jIdx)
 
 proc computeDesc(kii, kij, kjj, p, tMax0, tMax1, lmbda, regParam: float64): float64 {.inline.} =
