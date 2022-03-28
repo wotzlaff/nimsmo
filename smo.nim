@@ -3,7 +3,7 @@ import std/[algorithm, sequtils, strformat, times, sugar]
 type
   State = ref object
     a, g, ka, dUp, dDn: seq[float64]
-    b, violation: float64
+    b, violation, value: float64
     activeSet: seq[int]
 
   Problem[K] = ref object
@@ -52,7 +52,7 @@ proc computeDesc(kii, kij, kjj, p, tMax0, tMax1, lmbda, regParam: float64): floa
   let
     q = kii + kjj - 2.0 * kij
     t = min(lmbda * p / max(q, regParam), min(tMax0, tMax1))
-  return t * (0.5 / lmbda * q * t + p)
+  return t * (p - 0.5 / lmbda * q * t)
 
 
 proc findWS2[K](
@@ -157,6 +157,7 @@ proc update[K](problem: Problem[K], iIdx, jIdx: int, state: var State) {.inline.
   state.dDn[j] += tij
   state.dUp[j] -= tij
   let tijL = tij / problem.lmbda
+  state.value -= tij * (0.5 * qij * tijL - pij)
   for lIdx, l in state.activeSet:
     state.ka[l] += tijL * (kj[lIdx] - ki[lIdx])
 
@@ -225,9 +226,9 @@ proc smo*[K](
           let
             (objPrimal, objDual) = problem.objectives(state)
             gap = objPrimal + objDual
-          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {gap:10.6f} {objPrimal:10f} {-objDual:10f} {state.activeSet.len:8d} of {y.len:8d}"
+          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {gap:10.6f} {objPrimal:10f} {-objDual:10f} {state.value:10f} {state.activeSet.len:8d} of {y.len:8d}"
         else:
-          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.activeSet.len:8d} of {y.len:8d}"
+          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.value:10f} {state.activeSet.len:8d} of {y.len:8d}"
 
       # check convergence
       if optimal:
