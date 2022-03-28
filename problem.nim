@@ -6,6 +6,7 @@ type
     y: seq[float64]
     lmbda*: float64
     regParam*: float64
+    maxAsum*: float64
 
 proc newProblem*[K](k: K, y: seq[float64], lmbda, regParam: float64): Problem[K] =
   Problem[K](k: k, y: y, lmbda: lmbda, regParam: regParam)
@@ -36,6 +37,9 @@ proc upperBound*(problem: Problem, l: int): float64 {.inline.} =
 
 proc lowerBound*(problem: Problem, l: int): float64 {.inline.} =
   if problem.y[l] > 0.0: 0.0 else: -1.0
+
+proc sign*(problem: Problem, l: int): float64 {.inline.} =
+  if problem.y[l] > 0.0: 1.0 else: -1.0
 
 proc kernelRow*(problem: Problem, i: int): auto = problem.k.getRow(i)
 proc kernelDiag*(problem: Problem, i: int): auto {.inline.} = problem.k.diag(i)

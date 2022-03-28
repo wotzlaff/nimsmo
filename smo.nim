@@ -3,7 +3,7 @@ import std/[algorithm, sequtils, strformat, times, sugar]
 type
   State = ref object
     a, g, ka, dUp, dDn: seq[float64]
-    b, violation, gap, value: float64
+    b, violation, gap, value, asum: float64
     activeSet: seq[int]
 
   Result* = object
@@ -15,7 +15,8 @@ type
     gap*: float64
     value*: float64
 
-proc findMVP[P](problem: P, state: State): (int, int) {.inline.} =
+
+proc findMVPWithSign[P](problem: P, state: State, sign: float64): (float64, int, int) {.inline.} =
   var
     gmin = +Inf
     gmax = -Inf
@@ -25,19 +26,32 @@ proc findMVP[P](problem: P, state: State): (int, int) {.inline.} =
     let gl = problem.grad(state, l)
     state.g[l] = gl
 
-    if state.dDn[l] > 0.0 and gl > gmax:
+    if problem.sign(l) * sign >= 0.0 and state.dDn[l] > 0.0 and gl > gmax:
       i0Idx = lIdx
       gmax = gl
-    if state.dUp[l] > 0.0 and gl < gmin:
+    if problem.sign(l) * sign >= 0.0 and state.dUp[l] > 0.0 and gl < gmin:
       j1Idx = lIdx
       gmin = gl
-  let
-    i0 = state.activeSet[i0Idx]
-    j1 = state.activeSet[j1Idx]
-  state.violation = state.g[i0] - state.g[j1]
-  state.b = -0.5 * (state.g[i0] + state.g[j1])
-  (i0Idx, j1Idx)
+  (gmax - gmin, i0Idx, j1Idx)
 
+proc findMVPWithSign[P](problem: P, state: State): (float64, int, int) {.inline.} =
+  let
+    (pPos, iPos, jPos) = problem.findMVPWithSign(state, +1.0)
+    (pNeg, iNeg, jNeg) = problem.findMVPWithSign(state, -1.0)
+  if pPos > pNeg: (pPos, iPos, jPos) else: (pNeg, iNeg, jNeg)
+
+proc findMVP[P](problem: P, state: State): (int, int) {.inline.} =
+  let (violation, iIdx, jIdx) = if problem.maxAsum > 0.0 and state.asum == problem.maxAsum:
+    problem.findMVPWithSign(state)
+  else:
+    problem.findMVPWithSign(state, 0.0)
+  let
+    i = state.activeSet[iIdx]
+    j = state.activeSet[jIdx]
+  state.violation = violation
+  # TODO: fix this for sum-constrained problem
+  state.b = -0.5 * (state.g[i] + state.g[j])
+  (iIdx, jIdx)
 
 proc computeDesc(kii, kij, kjj, p, tMax0, tMax1, lmbda, regParam: float64): float64 {.inline.} =
   if p <= 0.0 or tMax1 == 0.0:
@@ -52,6 +66,7 @@ proc findWS2[P](
   problem: P,
   i0Idx, j1Idx: int,
   state: State,
+  sign: float64,
 ): (int, int) {.inline.} =
   let
     i0 = state.activeSet[i0Idx]
@@ -76,7 +91,7 @@ proc findWS2[P](
       kll = problem.kernelDiag(l)
       pi0l = gi0 - gl
       pj1l = gl - gj1
-    if state.dUp[l] > 0.0 and pi0l > 0.0:
+    if sign * problem.sign(l) >= 0.0 and state.dUp[l] > 0.0 and pi0l > 0.0:
       let di0l = computeDesc(
         ki0i0, ki0[lIdx], kll,
         pi0l, ti0Max, state.dUp[l],
@@ -85,7 +100,7 @@ proc findWS2[P](
       if di0l > dmax0:
         j0Idx = lIdx
         dmax0 = di0l
-    if state.dDn[l] > 0.0 and pj1l > 0.0:
+    if sign * problem.sign(l) >= 0.0 and state.dDn[l] > 0.0 and pj1l > 0.0:
       let dj1l = computeDesc(
         kj1j1, kj1[lIdx], kll,
         pj1l, tj1Max, state.dDn[l],
@@ -110,12 +125,20 @@ proc update[P](problem: P, iIdx, jIdx: int, state: State) {.inline.} =
   let
     pij = state.g[i] - state.g[j]
     qij = ki[iIdx] + kj[jIdx] - 2.0 * ki[jIdx]
+  var
     tij = min(
       # unconstrained min
       problem.lmbda * pij / max(qij, problem.regParam),
       min(state.dDn[i], state.dUp[j])
     )
   # update
+  if problem.maxAsum != 0.0 and problem.sign(i) != problem.sign(j):
+    let remAsum = problem.maxAsum - state.asum
+    if problem.sign(i) < 0.0 and remAsum <= tij:
+      tij = remAsum
+      state.asum = problem.maxAsum
+    else:
+      state.asum -= tij * problem.sign(i)
   state.a[i] -= tij
   state.dDn[i] -= tij
   state.dUp[i] += tij
@@ -171,9 +194,9 @@ proc smo*[P](
         if logObjective:
           let (objPrimal, objDual) = problem.objectives(state)
           state.gap = objPrimal + objDual
-          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.gap:10.6f} {objPrimal:10f} {-objDual:10f} {state.value:10f} {state.activeSet.len:8d} of {problem.size:8d}"
+          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.gap:10.6f} {objPrimal:10f} {-objDual:10f} {state.value:10f}{state.asum:6f} {state.activeSet.len:8d} of {problem.size:8d}"
         else:
-          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.value:10f} {state.activeSet.len:8d} of {problem.size:8d}"
+          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.value:10f} {state.asum:6f} {state.activeSet.len:8d} of {problem.size:8d}"
 
       # check convergence
       if optimal:
@@ -188,7 +211,11 @@ proc smo*[P](
       let (iIdx, jIdx) = if not secondOrder:
         (i0Idx, j1Idx)
       else:
-        problem.findWS2(i0Idx, j1Idx, state)
+        let sign = if problem.maxAsum > 0.0 and state.asum == problem.maxAsum:
+          problem.sign(state.activeSet[i0Idx])
+        else:
+          0.0
+        problem.findWS2(i0Idx, j1Idx, state, sign)
 
       # solve subproblem and update
       problem.update(iIdx, jIdx, state)
