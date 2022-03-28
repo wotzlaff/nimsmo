@@ -209,7 +209,7 @@ proc smo*[K](
   # initialize
   let t0 = cpuTime()
   var state = newState(y)
-  let problem = Problem[K](k: k, y: y, lmbda: lmbda)
+  let problem = Problem[K](k: k, y: y, lmbda: lmbda, regParam: regParam)
   block mainPart:
     for step in 1..maxSteps:
       if shrinkingPeriod > 0 and step mod shrinkingPeriod == 0:
