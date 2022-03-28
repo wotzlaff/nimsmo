@@ -17,14 +17,14 @@ proc newCachedKernel*[K](kernel: K, capacity: int): CachedKernel[K] =
     misses: 0,
   )
 
-proc getRow*[K](k: CachedKernel[K], i: int): KernelRow =
+proc getRow*[K](k: CachedKernel[K], i: int): KernelRow {.inline.} =
   k.accesses += 1
   if i notin k.cache:
     k.misses += 1
     k.cache[i] = k.kernel.getRow(i)
   k.cache[i]
 
-proc resetActive*[K](k: CachedKernel[K]) =
+proc resetActive*[K](k: CachedKernel[K]) {.inline.} =
   k.kernel.resetActive()
   k.cache.clear()
 

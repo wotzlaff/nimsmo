@@ -23,7 +23,7 @@ proc newGaussianKernel*(data: seq[seq[float64]], gamma: float64): GaussianKernel
   result.resetActive()
   result.prepare()
 
-proc compute*(k: GaussianKernel, i: int): KernelRow =
+proc compute*(k: GaussianKernel, i: int): KernelRow {.inline.} =
   let xi = k.data[i]
   let data = collect(newSeqOfCap(k.activeSize)):
     for j in k.activeSet:
