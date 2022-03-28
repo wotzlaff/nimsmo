@@ -1,6 +1,8 @@
 import std/[random, math, sequtils, stats, strformat, sugar, times]
 import smo
+import problem
 import kernel/[gaussian, cache]
+export cache
 
 when isMainModule:
   randomize(42)
@@ -17,8 +19,8 @@ when isMainModule:
   # define parameters
   let gamma = 1.5
   let lmbda = 0.01
-  # let k = newGaussianKernel(x, gamma)
-  let k = newCachedKernel(newGaussianKernel(x, gamma), 500)
+  let kernel = newGaussianKernel(x, gamma)
+  let k = newCachedKernel(kernel, 2000)
 
   let yr = collect:
     for xi in x:
@@ -27,6 +29,7 @@ when isMainModule:
   let y = collect:
     for yi in yr:
       if yi > ym: +1.0 else: -1.0
-  let res = smo(k, y, lmbda, verbose=1000)
+  let p = newProblem(k, y, lmbda, 1e-6)
+  let res = smo(p, verbose=1000)
   echo fmt"It took {res.steps} steps in {res.time:.1f} seconds..."
-  # echo k.cacheSummary()
+  echo k.cacheSummary()

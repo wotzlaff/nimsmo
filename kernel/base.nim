@@ -34,6 +34,3 @@ proc activeSet*[D](k: Kernel[D]): seq[int] {.inline.} = k.activeSet
 
 proc activeSize*[D](k: Kernel[D]): int {.inline.} =
   k.activeSet.len
-
-proc getRow*[K](k: K, i: int): KernelRow {.inline.} =
-  k.compute(i)

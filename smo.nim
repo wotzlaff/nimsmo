@@ -6,12 +6,6 @@ type
     b, violation, gap, value: float64
     activeSet: seq[int]
 
-  Problem[K] = ref object
-    y: seq[float64]
-    k: K
-    lmbda: float64
-    regParam: float64
-
   Result* = object
     a*: seq[float64]
     b*: float64
@@ -20,19 +14,6 @@ type
     violation*: float64
     gap*: float64
     value*: float64
-
-proc size*[K](problem: Problem[K]): int {.inline.} = problem.y.len
-# proc activeSize*[K](problem: Problem[K]): int {.inline.} = problem.k.activeSize
-proc isShrunk*[K](problem: Problem[K]): bool {.inline.} = problem.k.activeSize < problem.size
-
-proc grad*[K](problem: Problem[K], state: State, l: int): float64 {.inline.} =
-  state.ka[l] - problem.y[l]
-
-proc upperBound*[K](problem: Problem[K], l: int): float64 {.inline.} =
-  if problem.y[l] > 0.0: 1.0 else: 0.0
-
-proc lowerBound*[K](problem: Problem[K], l: int): float64 {.inline.} =
-  if problem.y[l] > 0.0: 0.0 else: -1.0
 
 proc findMVP[P](problem: P, state: var State): (int, int) {.inline.} =
   var
@@ -75,8 +56,8 @@ proc findWS2[P](
   let
     i0 = state.activeSet[i0Idx]
     j1 = state.activeSet[j1Idx]
-    ki0 = problem.k.getRow(i0)
-    kj1 = problem.k.getRow(j1)
+    ki0 = problem.kernelRow(i0)
+    kj1 = problem.kernelRow(j1)
   var
     dmax0 = 0.0
     dmax1 = 0.0
@@ -92,7 +73,7 @@ proc findWS2[P](
   for lIdx, l in state.activeSet:
     let
       gl = state.g[l]
-      kll = problem.k.diag(l)
+      kll = problem.kernelDiag(l)
       pi0l = gi0 - gl
       pj1l = gl - gj1
     if state.dUp[l] > 0.0 and pi0l > 0.0:
@@ -119,37 +100,12 @@ proc findWS2[P](
     (i1Idx, j1Idx)
 
 
-proc shrink[K](problem: Problem[K], state: var State, shrinkingThreshold: float64) =
-  state.activeSet = collect:
-    for l in state.activeSet:
-      let
-        glb = state.g[l] + state.b
-        glbSqr = glb * glb
-        fixUp = state.dUp[l] == 0.0 and glb < 0 and glbSqr > shrinkingThreshold * state.violation
-        fixDn = state.dDn[l] == 0.0 and glb > 0 and glbSqr > shrinkingThreshold * state.violation
-      if not (fixUp or fixDn):
-        l
-  problem.k.restrictActive(state.activeSet)
-
-proc unshrink[K](problem: Problem[K], state: var State) {.inline.} =
-  let n = problem.size
-  echo "Reactivate..."
-  problem.k.resetActive()
-  state.ka.fill(0.0)
-  for l in 0..<n:
-    let al = state.a[l]
-    if al != 0.0:
-      let kl = problem.k.getRow(l)
-      for r in 0..<n:
-        state.ka[r] += al / problem.lmbda * kl[r]
-  state.activeSet = (0..<n).toSeq()
-
-proc update[K](problem: Problem[K], iIdx, jIdx: int, state: var State) {.inline.} =
+proc update[P](problem: P, iIdx, jIdx: int, state: var State) {.inline.} =
   let
     i = state.activeSet[iIdx]
     j = state.activeSet[jIdx]
-    ki = problem.k.getRow(i)
-    kj = problem.k.getRow(j)
+    ki = problem.kernelRow(i)
+    kj = problem.kernelRow(j)
   # find optimal step size
   let
     pij = state.g[i] - state.g[j]
@@ -187,26 +143,9 @@ proc newState[P](problem: P): State =
   result.activeSet = (0..<n).toSeq()
 
 
-proc objectives[K](problem: Problem[K], state: State): (float64, float64) {.inline.} =
-  var
-    reg = 0.0
-    lossPrimal = 0.0
-    lossDual = 0.0
-  for l in 0..<problem.size:
-    reg += state.ka[l] * state.a[l]
-    lossPrimal += max(0.0, 1.0 - problem.y[l] * (state.ka[l] + state.b))
-    lossDual -= problem.y[l] * state.a[l]
-  let
-    objPrimal = 0.5 * reg + lossPrimal
-    objDual = 0.5 * reg + lossDual
-  (objPrimal, objDual)
-
-
-proc smo*[K](
-  k: K, y: seq[float64],
-  lmbda: float64;
+proc smo*[P](
+  problem: P,
   tolViolation: float64 = 1e-4;
-  regParam: float64 = 1e-10;
   secondOrder: bool = true;
   logObjective: bool = false;
   verbose: int = 0;
@@ -216,7 +155,6 @@ proc smo*[K](
 ): Result =
   # initialize
   let t0 = cpuTime()
-  let problem = Problem[K](k: k, y: y, lmbda: lmbda, regParam: regParam)
   var state = newState(problem)
   block mainPart:
     for step in 1..maxSteps:
