@@ -1,29 +1,30 @@
-import lrucache
-import std/[math, sugar, strformat, sequtils]
+import std/[math, sugar, sequtils]
 
 type
   Data = seq[seq[float64]]
 
-  KernelRow = ref object
+  KernelRow* = ref object
     data: seq[float64]
 
-  Kernel = ref object
+  Kernel* = ref object of RootObj
     x: Data
-    xsqr: seq[float64]
-    gamma: float64
     activeSet: seq[int]
 
-  # CachedKernel[K] = ref Object
-    cache: LruCache[int, KernelRow]
-    # kernel: K
-    accesses: int
-    misses: int
+  GaussianKernel* = ref object of Kernel
+    xsqr: seq[float64]
+    gamma: float64
 
 
 proc `[]`*(r: KernelRow, i: int): float64 {.inline.} =
   r.data[i]
 
-proc prepare(k: Kernel) =
+proc size*(k: Kernel): int {.inline.} =
+  k.activeSet.len
+
+proc `activeSet=`*(k: Kernel, activeSet: seq[int]) =
+  k.activeSet = activeSet
+
+proc prepare(k: GaussianKernel) =
   k.xsqr = collect:
     for xi in k.x:
       var xisqr = 0.0
@@ -31,18 +32,15 @@ proc prepare(k: Kernel) =
         xisqr += xik * xik
       xisqr
 
-proc size*(k: Kernel): int {.inline.} =
-  k.activeSet.len
-
-proc newKernel*(x: Data, gamma: float64, cap: int): Kernel =
-  result = new(Kernel)
-  result.x = x
-  result.activeSet = (0..<x.len).toSeq()
-  result.gamma = gamma
-  result.cache = newLRUCache[int, KernelRow](cap)
+proc newGaussianKernel*(x: Data, gamma: float64): GaussianKernel =
+  result = GaussianKernel(
+    x: x,
+    activeSet: (0..<x.len).toSeq(),
+    gamma: gamma
+  )
   result.prepare()
 
-proc compute(k: Kernel, i: int): KernelRow =
+proc compute(k: GaussianKernel, i: int): KernelRow =
   let xi = k.x[i]
   let data = collect(newSeqOfCap(k.size)):
     for j in k.activeSet:
@@ -52,20 +50,8 @@ proc compute(k: Kernel, i: int): KernelRow =
       exp(-k.gamma * dsqr)
   KernelRow(data: data)
 
-proc `[]`*(k: Kernel, i: int): KernelRow =
-  k.accesses += 1
-  if i notin k.cache:
-    k.misses += 1
-    k.cache[i] = k.compute(i)
-  k.cache[i]
-
-proc `activeSet=`*(k: Kernel, activeSet: seq[int]) =
-  k.activeSet = activeSet
-  # TODO: restrict the available data?
-  k.cache.clear()
-
-proc diag*(k: Kernel, i: int): float64 {.inline.} =
+proc diag*(k: GaussianKernel, i: int): float64 {.inline.} =
   1.0
 
-proc cacheSummary*(k: Kernel): string =
-  fmt"{k.misses} of {k.accesses} = {k.misses / k.accesses * 100:.1f}%"
+proc getRow*[K](k: K, i: int): KernelRow {.inline.} =
+  k.compute(i)

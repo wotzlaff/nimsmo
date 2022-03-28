@@ -114,7 +114,7 @@ proc smo*[K](
           for l in 0..<n:
             let al = a[l]
             if al != 0.0:
-              let kl = k[l]
+              let kl = k.getRow(l)
               for r in 0..<n:
                 ka[r] += al / lmbda * kl[r]
           continue
@@ -129,8 +129,8 @@ proc smo*[K](
       # determine working set
       let (iIdx, jIdx, ki, kj) = (
         let
-          ki0 = k[i0]
-          kj1 = k[j1]
+          ki0 = k.getRow(i0)
+          kj1 = k.getRow(j1)
         if not secondOrder:
           (i0Idx, j1Idx, ki0, kj1)
         else:
@@ -164,9 +164,9 @@ proc smo*[K](
                   i1Idx = lIdx
                   dmax1 = dj1l
             if dmax0 > dmax1:
-              (i0Idx, j0Idx, ki0, k[activeSet[j0Idx]])
+              (i0Idx, j0Idx, ki0, k.getRow(activeSet[j0Idx]))
             else:
-              (i1Idx, j1Idx, k[activeSet[i1Idx]], kj1)
+              (i1Idx, j1Idx, k.getRow(activeSet[i1Idx]), kj1)
       )
       
       let
