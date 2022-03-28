@@ -10,6 +10,7 @@ type
     y: seq[float64]
     k: K
     lmbda: float64
+    regParam: float64
 
   Result* = object
     a*: seq[float64]
@@ -58,8 +59,7 @@ proc findWS2[K](
   problem: Problem[K],
   i0Idx, j1Idx: int,
   state: var State,
-  regParam: float64,
-): auto {.inline.} =
+): (int, int) {.inline.} =
   let
     i0 = state.activeSet[i0Idx]
     j1 = state.activeSet[j1Idx]
@@ -87,7 +87,7 @@ proc findWS2[K](
       let di0l = computeDesc(
         ki0i0, ki0[lIdx], kll,
         pi0l, ti0Max, state.dUp[l],
-        problem.lmbda, regParam
+        problem.lmbda, problem.regParam
       )
       if di0l > dmax0:
         j0Idx = lIdx
@@ -96,15 +96,15 @@ proc findWS2[K](
       let dj1l = computeDesc(
         kj1j1, kj1[lIdx], kll,
         pj1l, tj1Max, state.dDn[l],
-        problem.lmbda, regParam
+        problem.lmbda, problem.regParam
       )
       if dj1l > dmax1:
         i1Idx = lIdx
         dmax1 = dj1l
   if dmax0 > dmax1:
-    (i0Idx, j0Idx, ki0, problem.k.getRow(state.activeSet[j0Idx]))
+    (i0Idx, j0Idx)
   else:
-    (i1Idx, j1Idx, problem.k.getRow(state.activeSet[i1Idx]), kj1)
+    (i1Idx, j1Idx)
 
 
 proc isShrunk[K](problem: Problem[K]): bool {.inline.} = problem.k.activeSize < problem.size
@@ -121,7 +121,7 @@ proc shrink[K](problem: Problem[K], state: var State, shrinkingThreshold: float6
         l
   problem.k.restrictActive(state.activeSet)
 
-proc unshrink[K](problem: Problem[K], state: var State) =
+proc unshrink[K](problem: Problem[K], state: var State) {.inline.} =
   let n = problem.size
   echo "Reactivate..."
   problem.k.resetActive()
@@ -133,6 +133,35 @@ proc unshrink[K](problem: Problem[K], state: var State) =
       for r in 0..<n:
         state.ka[r] += al / problem.lmbda * kl[r]
   state.activeSet = (0..<n).toSeq()
+
+proc update[K](problem: Problem[K], iIdx, jIdx: int, state: var State) {.inline.} =
+  let
+    i = state.activeSet[iIdx]
+    j = state.activeSet[jIdx]
+    ki = problem.k.getRow(i)
+    kj = problem.k.getRow(j)
+
+  # find optimal step size
+  let
+    pij = state.g[i] - state.g[j]
+    qij = ki[iIdx] + kj[jIdx] - 2.0 * ki[jIdx]
+    tij = min(
+      # unconstrained min
+      problem.lmbda * pij / max(qij, problem.regParam),
+      min(state.dDn[i], state.dUp[j])
+    )
+
+  # update
+  state.a[i] -= tij
+  state.dDn[i] -= tij
+  state.dUp[i] += tij
+  state.a[j] += tij
+  state.dDn[j] += tij
+  state.dUp[j] -= tij
+  let tijL = tij / problem.lmbda
+  for lIdx, l in state.activeSet:
+    state.ka[l] += tijL * (kj[lIdx] - ki[lIdx])
+
 
 proc newState(y: seq[float64]): State =
   let n = y.len
@@ -150,6 +179,20 @@ proc newState(y: seq[float64]): State =
       result.dDn[l] = 1.0
   result.activeSet = (0..<n).toSeq()
 
+
+proc objectives[K](problem: Problem[K], state: State): (float64, float64) {.inline.} =
+  var
+    reg = 0.0
+    lossPrimal = 0.0
+    lossDual = 0.0
+  for l in 0..<problem.size:
+    reg += state.ka[l] * state.a[l]
+    lossPrimal += max(0.0, 1.0 - problem.y[l] * (state.ka[l] + state.b))
+    lossDual -= problem.y[l] * state.a[l]
+  let
+    objPrimal = 0.5 * reg + lossPrimal
+    objDual = 0.5 * reg + lossDual
+  (objPrimal, objDual)
 
 proc smo*[K](
   k: K, y: seq[float64],
@@ -170,7 +213,6 @@ proc smo*[K](
     y: y,
     lmbda: lmbda,
   )
-
   block mainPart:
     for step in 1..maxSteps:
       if shrinkingPeriod > 0 and step mod shrinkingPeriod == 0:
@@ -182,17 +224,8 @@ proc smo*[K](
 
       # print progress
       if verbose > 0 and (step mod verbose == 0 or optimal):
-        var
-          reg = 0.0
-          lossPrimal = 0.0
-          lossDual = 0.0
-        for l in 0..<problem.size:
-          reg += state.ka[l] * state.a[l]
-          lossPrimal += max(0.0, 1.0 - y[l] * (state.ka[l] + state.b))
-          lossDual -= y[l] * state.a[l]
         let
-          objPrimal = 0.5 * reg + lossPrimal
-          objDual = 0.5 * reg + lossDual
+          (objPrimal, objDual) = problem.objectives(state)
           gap = objPrimal + objDual
           dt = cpuTime() - t0
         echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {gap:10.6f} {objPrimal:10f} {-objDual:10f} {state.activeSet.len:8d} of {y.len:8d}"
@@ -211,38 +244,13 @@ proc smo*[K](
           break mainPart
 
       # determine working set
-      let (iIdx, jIdx, ki, kj) = if not secondOrder:
-        let
-          i0 = state.activeSet[i0Idx]
-          j1 = state.activeSet[j1Idx]
-        (i0Idx, j1Idx, k.getRow(i0), k.getRow(j1))
+      let (iIdx, jIdx) = if not secondOrder:
+        (i0Idx, j1Idx)
       else:
-        problem.findWS2(i0Idx, j1Idx, state, regParam)
-      
-      let
-        i = state.activeSet[iIdx]
-        j = state.activeSet[jIdx]
+        problem.findWS2(i0Idx, j1Idx, state)
 
-      # find optimal step size
-      let
-        pij = state.g[i] - state.g[j]
-        qij = ki[iIdx] + kj[jIdx] - 2.0 * ki[jIdx]
-        tij = min(
-          # unconstrained min
-          problem.lmbda * pij / max(qij, regParam),
-          min(state.dDn[i], state.dUp[j])
-        )
-
-      # update
-      state.a[i] -= tij
-      state.dDn[i] -= tij
-      state.dUp[i] += tij
-      state.a[j] += tij
-      state.dDn[j] += tij
-      state.dUp[j] -= tij
-      let tijL = tij / problem.lmbda
-      for lIdx, l in state.activeSet:
-        state.ka[l] += tijL * (kj[lIdx] - ki[lIdx])
+      # solve subproblem and update
+      problem.update(iIdx, jIdx, state)
 
     let dt = cpuTime() - t0
     result.steps = maxSteps
