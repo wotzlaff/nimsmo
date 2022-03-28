@@ -140,7 +140,6 @@ proc update[K](problem: Problem[K], iIdx, jIdx: int, state: var State) {.inline.
     j = state.activeSet[jIdx]
     ki = problem.k.getRow(i)
     kj = problem.k.getRow(j)
-
   # find optimal step size
   let
     pij = state.g[i] - state.g[j]
@@ -150,7 +149,6 @@ proc update[K](problem: Problem[K], iIdx, jIdx: int, state: var State) {.inline.
       problem.lmbda * pij / max(qij, problem.regParam),
       min(state.dDn[i], state.dUp[j])
     )
-
   # update
   state.a[i] -= tij
   state.dDn[i] -= tij
@@ -194,12 +192,14 @@ proc objectives[K](problem: Problem[K], state: State): (float64, float64) {.inli
     objDual = 0.5 * reg + lossDual
   (objPrimal, objDual)
 
+
 proc smo*[K](
   k: K, y: seq[float64],
   lmbda: float64;
   tolViolation: float64 = 1e-4;
   regParam: float64 = 1e-10;
   secondOrder: bool = true;
+  logObjective: bool = false;
   verbose: int = 0;
   maxSteps: int = 1_000_000_000;
   shrinkingPeriod: int = 1000;
@@ -208,11 +208,7 @@ proc smo*[K](
   # initialize
   let t0 = cpuTime()
   var state = newState(y)
-  let problem = Problem[K](
-    k: k,
-    y: y,
-    lmbda: lmbda,
-  )
+  let problem = Problem[K](k: k, y: y, lmbda: lmbda)
   block mainPart:
     for step in 1..maxSteps:
       if shrinkingPeriod > 0 and step mod shrinkingPeriod == 0:
@@ -224,11 +220,14 @@ proc smo*[K](
 
       # print progress
       if verbose > 0 and (step mod verbose == 0 or optimal):
-        let
-          (objPrimal, objDual) = problem.objectives(state)
-          gap = objPrimal + objDual
-          dt = cpuTime() - t0
-        echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {gap:10.6f} {objPrimal:10f} {-objDual:10f} {state.activeSet.len:8d} of {y.len:8d}"
+        let dt = cpuTime() - t0
+        if logObjective:
+          let
+            (objPrimal, objDual) = problem.objectives(state)
+            gap = objPrimal + objDual
+          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {gap:10.6f} {objPrimal:10f} {-objDual:10f} {state.activeSet.len:8d} of {y.len:8d}"
+        else:
+          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.activeSet.len:8d} of {y.len:8d}"
 
       # check convergence
       if optimal:
