@@ -1,6 +1,6 @@
 import lrucache
 import std/strformat
-import kernel
+import base
 
 type
   CachedKernel[K] = ref object
@@ -34,7 +34,7 @@ proc restrictActive*[K](k: CachedKernel[K], activeSet: seq[int]) =
   k.kernel.restrictActive(activeSet)
 
 proc diag*[K](k: CachedKernel[K], i: int): float64 {.inline.} =
-  k.kernel.diag(i)
+  k.kernel.getDiag(i)
 
 proc activeSize*[K](k: CachedKernel[K]): int {.inline.} =
   k.kernel.activeSize
