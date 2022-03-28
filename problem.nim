@@ -10,7 +10,7 @@ type
 proc newProblem*[K](k: K, y: seq[float64], lmbda, regParam: float64): Problem[K] =
   Problem[K](k: k, y: y, lmbda: lmbda, regParam: regParam)
 
-proc objectives*[K, S](problem: Problem[K], state: S): (float64, float64) {.inline.} =
+proc objectives*[S](problem: Problem, state: S): (float64, float64) {.inline.} =
   var
     reg = 0.0
     lossPrimal = 0.0
@@ -25,21 +25,21 @@ proc objectives*[K, S](problem: Problem[K], state: S): (float64, float64) {.inli
   (objPrimal, objDual)
 
 
-proc size*[K](problem: Problem[K]): int {.inline.} = problem.y.len
-# proc activeSize*[K](problem: Problem[K]): int {.inline.} = problem.k.activeSize
-proc isShrunk*[K](problem: Problem[K]): bool {.inline.} = problem.k.activeSize < problem.size
+proc size*(problem: Problem): int {.inline.} = problem.y.len
+# proc activeSize*(problem: Problem): int {.inline.} = problem.k.activeSize
+proc isShrunk*(problem: Problem): bool {.inline.} = problem.k.activeSize < problem.size
 
-proc grad*[K, S](problem: Problem[K], state: S, l: int): float64 {.inline.} =
+proc grad*[S](problem: Problem, state: S, l: int): float64 {.inline.} =
   state.ka[l] - problem.y[l]
 
-proc upperBound*[K](problem: Problem[K], l: int): float64 {.inline.} =
+proc upperBound*(problem: Problem, l: int): float64 {.inline.} =
   if problem.y[l] > 0.0: 1.0 else: 0.0
 
-proc lowerBound*[K](problem: Problem[K], l: int): float64 {.inline.} =
+proc lowerBound*(problem: Problem, l: int): float64 {.inline.} =
   if problem.y[l] > 0.0: 0.0 else: -1.0
 
 
-proc shrink*[K, S](problem: Problem[K], state: S, shrinkingThreshold: float64) =
+proc shrink*[S](problem: Problem, state: S, shrinkingThreshold: float64) =
   state.activeSet = collect:
     for l in state.activeSet:
       let
@@ -51,7 +51,7 @@ proc shrink*[K, S](problem: Problem[K], state: S, shrinkingThreshold: float64) =
         l
   problem.k.restrictActive(state.activeSet)
 
-proc unshrink*[K, S](problem: Problem[K], state: S) {.inline.} =
+proc unshrink*[S](problem: Problem, state: S) {.inline.} =
   let n = problem.size
   echo "Reactivate..."
   problem.k.resetActive()
@@ -64,5 +64,5 @@ proc unshrink*[K, S](problem: Problem[K], state: S) {.inline.} =
         state.ka[r] += al / problem.lmbda * kl[r]
   state.activeSet = (0..<n).toSeq()
 
-proc kernelRow*[K](problem: Problem[K], i: int): auto = problem.k.getRow(i)
-proc kernelDiag*[K](problem: Problem[K], i: int): auto {.inline.} = problem.k.diag(i)
+proc kernelRow*(problem: Problem, i: int): auto = problem.k.getRow(i)
+proc kernelDiag*(problem: Problem, i: int): auto {.inline.} = problem.k.diag(i)

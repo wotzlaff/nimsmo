@@ -24,11 +24,11 @@ proc getRow*[C](k: C, i: int): KernelRow {.inline.} =
     k.cache[i] = k.kernel.compute(i)
   k.cache[i]
 
-proc resetActive*[K](k: CachedKernel[K]) {.inline.} =
+proc resetActive*(k: CachedKernel) {.inline.} =
   k.kernel.resetActive()
   k.cache.clear()
 
-proc restrictActive*[K](k: CachedKernel[K], activeSet: seq[int]) =
+proc restrictActive*(k: CachedKernel, activeSet: seq[int]) =
   for (key, row) in k.cache.mitems:
     row.restrict(k.kernel.activeSet, activeSet)
   k.kernel.restrictActive(activeSet)
@@ -36,8 +36,8 @@ proc restrictActive*[K](k: CachedKernel[K], activeSet: seq[int]) =
 proc diag*(k: CachedKernel, i: int): float64 {.inline.} =
   k.kernel.getDiag(i)
 
-proc activeSize*[K](k: CachedKernel[K]): int {.inline.} =
+proc activeSize*(k: CachedKernel): int {.inline.} =
   k.kernel.activeSize
 
-proc cacheSummary*[K](k: CachedKernel[K]): string =
+proc cacheSummary*(k: CachedKernel): string =
   fmt"{k.misses} of {k.accesses} = {k.misses / k.accesses * 100:.1f}%"
