@@ -9,7 +9,7 @@ type
     maxAsum*: float64
 
 proc newProblem*[K](k: K, y: seq[float64], lmbda, regParam: float64): Problem[K] =
-  Problem[K](k: k, y: y, lmbda: lmbda, regParam: regParam)
+  Problem[K](k: k, y: y, lmbda: lmbda, regParam: regParam, maxAsum: Inf)
 
 proc objectives*[S](problem: Problem, state: S): (float64, float64) {.inline.} =
   var
@@ -44,15 +44,15 @@ proc sign*(problem: Problem, l: int): float64 {.inline.} =
 proc kernelRow*(problem: Problem, i: int): auto = problem.k.getRow(i)
 proc kernelDiag*(problem: Problem, i: int): auto {.inline.} = problem.k.diag(i)
 
-
 proc shrink*[S](problem: Problem, state: S, shrinkingThreshold: float64) =
   state.activeSet = collect:
     for l in state.activeSet:
       let
-        glb = state.g[l] + state.b
+        glb = state.g[l] + state.b + state.c * problem.sign(l)
         glbSqr = glb * glb
-        fixUp = state.dUp[l] == 0.0 and glb < 0 and glbSqr > shrinkingThreshold * state.violation
-        fixDn = state.dDn[l] == 0.0 and glb > 0 and glbSqr > shrinkingThreshold * state.violation
+        canShrink = glbSqr > shrinkingThreshold * state.violation
+        fixUp = state.dUp[l] == 0.0 and glb < 0 and canShrink
+        fixDn = state.dDn[l] == 0.0 and glb > 0 and canShrink
       if not (fixUp or fixDn):
         l
   problem.k.restrictActive(state.activeSet)

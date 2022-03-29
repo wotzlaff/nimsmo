@@ -3,12 +3,12 @@ import std/[algorithm, sequtils, strformat, times, sugar]
 type
   State = ref object
     a, g, ka, dUp, dDn: seq[float64]
-    b, violation, gap, value, asum: float64
+    b, c, violation, gap, value, asum: float64
     activeSet: seq[int]
 
   Result* = object
     a*: seq[float64]
-    b*: float64
+    b*, c*: float64
     steps*: int
     time*: float64
     violation*: float64
@@ -16,7 +16,9 @@ type
     value*: float64
 
 
-proc findMVPWithSign[P](problem: P, state: State, sign: float64): (float64, float64, int, int) {.inline.} =
+proc findMVPWithSign[P](
+  problem: P, state: State, sign: float64
+): (float64, float64, int, int) {.inline.} =
   var
     gmin = +Inf
     gmax = -Inf
@@ -32,28 +34,29 @@ proc findMVPWithSign[P](problem: P, state: State, sign: float64): (float64, floa
     if problem.sign(l) * sign >= 0.0 and state.dUp[l] > 0.0 and gl < gmin:
       j1Idx = lIdx
       gmin = gl
-  (gmax - gmin, 0.5 * (gmax + gmin), i0Idx, j1Idx)
+  (gmax - gmin, gmax + gmin, i0Idx, j1Idx)
 
 proc findMVP[P](problem: P, state: State): (int, int) {.inline.} =
-  let (violation, iIdx, jIdx) = if problem.maxAsum > 0.0 and state.asum == problem.maxAsum:
+  let (dij, iIdx, jIdx) = if state.asum == problem.maxAsum:
     let
-      (vPos, mPos, iPos, jPos) = problem.findMVPWithSign(state, +1.0)
-      (vNeg, mNeg, iNeg, jNeg) = problem.findMVPWithSign(state, -1.0)
-    # echo fmt"{-0.5 * (state.g[state.activeSet[iPos]] + state.g[state.activeSet[jPos]])}"
-    # echo fmt"{-0.5 * (state.g[state.activeSet[iNeg]] + state.g[state.activeSet[jNeg]])}"
-    # TODO: implement this for sum-constrained problem
-    if vPos > vNeg: (vPos, iPos, jPos) else: (vNeg, iNeg, jNeg)
+      (dPos, sPos, iPos, jPos) = problem.findMVPWithSign(state, +1.0)
+      (dNeg, sNeg, iNeg, jNeg) = problem.findMVPWithSign(state, -1.0)
+    state.b = -0.25 * (sPos + sNeg)
+    state.c = 0.25 * (sNeg - sPos)
+    if dPos > dNeg: (dPos, iPos, jPos) else: (dNeg, iNeg, jNeg)
   else:
-    let (v, mean, iIdx, jIdx) = problem.findMVPWithSign(state, 0.0)
-    state.b = -mean
-    (v, iIdx, jIdx)
+    let (dij, sij, iIdx, jIdx) = problem.findMVPWithSign(state, 0.0)
+    state.b = -0.5 * sij
+    (dij, iIdx, jIdx)
   let
     i = state.activeSet[iIdx]
     j = state.activeSet[jIdx]
-  state.violation = violation
+  state.violation = dij
   (iIdx, jIdx)
 
-proc computeDesc(kii, kij, kjj, p, tMax0, tMax1, lmbda, regParam: float64): float64 {.inline.} =
+proc computeDesc(
+  kii, kij, kjj, p, tMax0, tMax1, lmbda, regParam: float64
+): float64 {.inline.} =
   if p <= 0.0 or tMax1 == 0.0:
     return 0.0
   let
@@ -132,7 +135,7 @@ proc update[P](problem: P, iIdx, jIdx: int, state: State) {.inline.} =
       min(state.dDn[i], state.dUp[j])
     )
   # update
-  if problem.maxAsum != 0.0 and problem.sign(i) != problem.sign(j):
+  if problem.sign(i) != problem.sign(j):
     let remAsum = problem.maxAsum - state.asum
     if problem.sign(i) < 0.0 and remAsum <= tij:
       tij = remAsum
