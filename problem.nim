@@ -18,10 +18,12 @@ proc objectives*[S](problem: Problem, state: S): (float64, float64) {.inline.} =
     lossDual = 0.0
   for l in 0..<problem.size:
     reg += state.ka[l] * state.a[l]
-    lossPrimal += max(0.0, 1.0 - problem.y[l] * (state.ka[l] + state.b))
+    let dec = state.ka[l] + state.b + problem.sign(l) * state.c
+    lossPrimal += max(0.0, 1.0 - problem.y[l] * dec)
     lossDual -= problem.y[l] * state.a[l]
   let
-    objPrimal = 0.5 * reg + lossPrimal
+    asumTerm = if problem.maxAsum < Inf: problem.maxAsum * state.c else: 0.0
+    objPrimal = 0.5 * reg + lossPrimal + asumTerm
     objDual = 0.5 * reg + lossDual
   (objPrimal, objDual)
 

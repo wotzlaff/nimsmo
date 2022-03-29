@@ -27,7 +27,6 @@ proc findMVPWithSign[P](
   for lIdx, l in state.activeSet:
     let gl = problem.grad(state, l)
     state.g[l] = gl
-
     if problem.sign(l) * sign >= 0.0 and state.dDn[l] > 0.0 and gl > gmax:
       i0Idx = lIdx
       gmax = gl
@@ -48,9 +47,6 @@ proc findMVP[P](problem: P, state: State): (int, int) {.inline.} =
     let (dij, sij, iIdx, jIdx) = problem.findMVPWithSign(state, 0.0)
     state.b = -0.5 * sij
     (dij, iIdx, jIdx)
-  let
-    i = state.activeSet[iIdx]
-    j = state.activeSet[jIdx]
   state.violation = dij
   (iIdx, jIdx)
 
@@ -137,11 +133,11 @@ proc update[P](problem: P, iIdx, jIdx: int, state: State) {.inline.} =
   # update
   if problem.sign(i) != problem.sign(j):
     let remAsum = problem.maxAsum - state.asum
-    if problem.sign(i) < 0.0 and remAsum <= tij:
-      tij = remAsum
+    if problem.sign(i) < 0.0 and remAsum <= 2.0 * tij:
+      tij = 0.5 * remAsum
       state.asum = problem.maxAsum
     else:
-      state.asum -= tij * problem.sign(i)
+      state.asum -= 2.0 * tij * problem.sign(i)
   state.a[i] -= tij
   state.dDn[i] -= tij
   state.dUp[i] += tij
@@ -197,9 +193,9 @@ proc smo*[P](
         if logObjective:
           let (objPrimal, objDual) = problem.objectives(state)
           state.gap = objPrimal + objDual
-          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.gap:10.6f} {objPrimal:10f} {-objDual:10f} {state.value:10f}{state.asum:6f} {state.activeSet.len:8d} of {problem.size:8d}"
+          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.gap:10.6f} {objPrimal:10f} {-objDual:10f} {state.value:10f}{state.asum:6.1f} {state.activeSet.len:8d} of {problem.size:8d}"
         else:
-          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.value:10f} {state.asum:6f} {state.activeSet.len:8d} of {problem.size:8d}"
+          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.value:10f} {state.asum:6.1f} {state.activeSet.len:8d} of {problem.size:8d}"
 
       # check convergence
       if optimal:
