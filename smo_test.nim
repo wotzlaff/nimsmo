@@ -1,6 +1,6 @@
 import std/[random, math, sequtils, stats, strformat, sugar, times]
 import smo
-import problem
+import problem_cls
 import kernel/[gaussian, cache]
 
 when isMainModule:
@@ -27,13 +27,20 @@ when isMainModule:
   let y = collect:
     for yi in yr:
       if yi > ym: +1.0 else: -1.0
-  var p = newProblem(kernel, y, lmbda, 1e-10)
-  # p.maxAsum = 200.0
-  let res = smo(p, verbose=1000)
+  var p = newProblem(kernel, y, lmbda)
+  p.maxAsum = 0.01 * n.float64
+  let res = smo(p, verbose=1000, shrinkingPeriod=n)
   echo fmt"It took {res.steps} steps in {res.time:.1f} seconds..."
   echo kernel.cacheSummary()
+  var
+    asum = 0.0
+    acnt = 0
+  for ai in res.a:
+    asum += ai.abs()
+    if ai.abs() > 1e-6:
+      acnt += 1
 
-  var asum = 0.0
-  for (ai, yi) in zip(res.a, y):
-    asum += ai * yi
   echo "asum = ", asum
+  echo "acnt = ", acnt
+  echo "c = ", res.c
+  # echo "eps = ", p.epsilon + res.c
