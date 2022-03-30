@@ -5,7 +5,6 @@ type
     data*: seq[float64]
 
   Kernel* = ref object of RootObj
-    size*: int
     activeSet*: seq[int]
 
 proc getRow*(k: Kernel, i: int): KernelRow =
@@ -14,11 +13,11 @@ proc getRow*(k: Kernel, i: int): KernelRow =
 proc diag*(k: Kernel, i: int): float64 =
   assert(false, "Not implemented")
 
+method size*(k: Kernel): int {.base.} =
+  assert(false, "Not implemented")
+
 proc `[]`*(r: KernelRow, i: int): float64 {.inline.} =
   r.data[i]
-
-proc double*(r: KernelRow): KernelRow {.inline.} =
-  result.data = r.data & r.data
 
 proc restrict*(row: KernelRow, activeOld, activeNew: seq[int]) =
   var it0 = 0

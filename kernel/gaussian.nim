@@ -17,7 +17,6 @@ proc prepare(k: GaussianKernel) =
 
 proc newGaussianKernel*(data: seq[seq[float64]], gamma: float64): GaussianKernel =
   result = GaussianKernel(
-    size: data.len,
     data: data,
     gamma: gamma
   )
@@ -36,3 +35,6 @@ proc getRow*(k: GaussianKernel, i: int): KernelRow =
 
 proc diag*(k: GaussianKernel, i: int): float64 {.inline.} =
   1.0
+
+method size*(k: GaussianKernel): int =
+  k.data.len
