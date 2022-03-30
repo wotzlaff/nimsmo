@@ -194,9 +194,9 @@ proc smo*[P](
         if logObjective:
           let (objPrimal, objDual) = problem.objectives(state)
           state.gap = objPrimal + objDual
-          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.gap:10.6f} {objPrimal:10f} {-objDual:10f} {state.value:10f}{state.asum:6.1f} {state.activeSet.len:8d} of {problem.size:8d}"
+          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.gap:10.6f} {objPrimal:10f} {-objDual:10f} {state.value:10f}{state.asum:8.2f} {state.activeSet.len:8d} of {problem.size:8d}"
         else:
-          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.value:10f} {state.asum:6.1f} {state.activeSet.len:8d} of {problem.size:8d}"
+          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.value:10f} {state.asum:8.2f} {state.activeSet.len:8d} of {problem.size:8d}"
 
       # check convergence
       if optimal:
