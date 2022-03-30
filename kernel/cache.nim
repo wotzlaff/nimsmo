@@ -25,14 +25,14 @@ proc getRow*(k: CachedKernel, i: int): KernelRow {.inline.} =
     k.cache[i] = k.kernel.getRow(i)
   k.cache[i]
 
-proc resetActive*(k: CachedKernel) {.inline.} =
-  k.kernel.resetActive()
+proc setActive*(k: CachedKernel, activeSet: seq[int]) {.inline.} =
+  k.kernel.activeSet = activeSet
   k.cache.clear()
 
 proc restrictActive*(k: CachedKernel, activeSet: seq[int]) =
   for (key, row) in k.cache.mitems:
     row.restrict(k.kernel.activeSet, activeSet)
-  k.kernel.restrictActive(activeSet)
+  k.kernel.activeSet = activeSet
 
 proc diag*(k: CachedKernel, i: int): float64 {.inline.} =
   k.kernel.diag(i)

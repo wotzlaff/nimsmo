@@ -9,7 +9,8 @@ type
     maxAsum*: float64
 
 proc newProblem*[K](k: K, y: seq[float64], lmbda, regParam: float64): Problem[K] =
-  Problem[K](k: k, y: y, lmbda: lmbda, regParam: regParam, maxAsum: Inf)
+  result = Problem[K](k: k, y: y, lmbda: lmbda, regParam: regParam, maxAsum: Inf)
+  result.k.setActive((0..<result.size).toSeq())
 
 proc objectives*[S](problem: Problem, state: S): (float64, float64) {.inline.} =
   var
@@ -62,7 +63,7 @@ proc shrink*[S](problem: Problem, state: S, shrinkingThreshold: float64) =
 proc unshrink*[S](problem: Problem, state: S) {.inline.} =
   let n = problem.size
   echo "Reactivate..."
-  problem.k.resetActive()
+  problem.k.setActive((0..<n).toSeq())
   state.ka.fill(0.0)
   for l in 0..<n:
     let al = state.a[l]

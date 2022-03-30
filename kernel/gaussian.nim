@@ -20,7 +20,6 @@ proc newGaussianKernel*(data: seq[seq[float64]], gamma: float64): GaussianKernel
     data: data,
     gamma: gamma
   )
-  result.resetActive()
   result.prepare()
 
 proc getRow*(k: GaussianKernel, i: int): KernelRow =

@@ -27,14 +27,5 @@ proc restrict*(row: KernelRow, activeOld, activeNew: seq[int]) =
         it0 += 1
         val
 
-proc resetActive*(k: Kernel) {.inline.} =
-  k.activeSet = (0..<k.size).toSeq()
-
-proc restrictActive*(k: Kernel, activeNew: seq[int]) {.inline.} =
-  k.activeSet = activeNew
-
-proc activeSet*(k: Kernel): seq[int] {.inline.} =
-  k.activeSet
-
 proc activeSize*(k: Kernel): int {.inline.} =
   k.activeSet.len
