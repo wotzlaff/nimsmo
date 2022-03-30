@@ -6,10 +6,17 @@ type
     y: seq[float64]
     lmbda*: float64
     regParam*: float64
+    epsilon*: float64
     maxAsum*: float64
 
-proc newProblem*[K](k: K, y: seq[float64], lmbda, regParam: float64): Problem[K] =
-  result = Problem[K](k: k, y: y, lmbda: lmbda, regParam: regParam, maxAsum: Inf)
+proc newProblem*[K](
+  k: K, y: seq[float64];
+  lmbda: float64;
+  regParam: float64 = 1e-10;
+  epsilon: float64 = 1e-6;
+  maxAsum: float64 = Inf;
+  ): Problem[K] =
+  result = Problem[K](k: k, y: y, lmbda: lmbda, regParam: regParam, epsilon: epsilon, maxAsum: maxAsum)
   let idxs = (0..<y.len).toSeq()
   result.k.setActive(idxs & idxs)
 
@@ -37,7 +44,7 @@ proc size*(problem: Problem): int {.inline.} = 2 * problem.y.len
 proc isShrunk*(problem: Problem): bool {.inline.} = problem.k.activeSize < problem.size
 
 proc grad*[S](problem: Problem, state: S, l: int): float64 {.inline.} =
-  state.ka[l] - problem.y[l mod problem.y.len] + problem.sign(l) * problem.regParam
+  state.ka[l] - problem.y[l mod problem.y.len] + problem.sign(l) * problem.epsilon
 
 proc upperBound*(problem: Problem, l: int): float64 {.inline.} =
   if l < problem.y.len: 1.0 else: 0.0

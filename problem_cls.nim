@@ -8,8 +8,13 @@ type
     regParam*: float64
     maxAsum*: float64
 
-proc newProblem*[K](k: K, y: seq[float64], lmbda, regParam: float64): Problem[K] =
-  result = Problem[K](k: k, y: y, lmbda: lmbda, regParam: regParam, maxAsum: Inf)
+proc newProblem*[K](
+  k: K, y: seq[float64];
+  lmbda: float64;
+  regParam: float64 = 1e-10;
+  maxAsum: float64 = Inf;
+): Problem[K] =
+  result = Problem[K](k: k, y: y, lmbda: lmbda, regParam: regParam, maxAsum: maxAsum)
   result.k.setActive((0..<result.size).toSeq())
 
 proc objectives*[S](problem: Problem, state: S): (float64, float64) {.inline.} =
