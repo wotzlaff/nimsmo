@@ -226,4 +226,5 @@ proc smo*[P](
   result.violation = state.violation
   result.a = state.a
   result.b = state.b
+  result.c = state.c
   result.value = state.value
