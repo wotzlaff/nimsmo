@@ -1,4 +1,5 @@
 import std/[algorithm, sequtils, strformat, times, sugar]
+import shrinking
 
 type
   State = ref object

@@ -1,8 +1,8 @@
-import std/[algorithm, sugar]
+import std/algorithm
 
 type
   Problem*[K] = ref object
-    k: K
+    k*: K
     y: seq[float64]
     lmbda*: float64
     regParam*: float64
@@ -44,31 +44,7 @@ proc lowerBound*(problem: Problem, l: int): float64 {.inline.} =
 proc sign*(problem: Problem, l: int): float64 {.inline.} =
   if problem.y[l] > 0.0: 1.0 else: -1.0
 
-proc kernelRow*(problem: Problem, i: int): auto = problem.k.getRow(i)
-proc kernelDiag*(problem: Problem, i: int): auto {.inline.} = problem.k.diag(i)
-
-proc shrink*[S](problem: Problem, state: S, shrinkingThreshold: float64) =
-  state.activeSet = collect:
-    for l in state.activeSet:
-      let
-        glb = state.g[l] + state.b + state.c * problem.sign(l)
-        glbSqr = glb * glb
-        canShrink = glbSqr > shrinkingThreshold * state.violation
-        fixUp = state.dUp[l] == 0.0 and glb < 0 and canShrink
-        fixDn = state.dDn[l] == 0.0 and glb > 0 and canShrink
-      if not (fixUp or fixDn):
-        l
-  problem.k.restrictActive(state.activeSet)
-
-proc unshrink*[S](problem: Problem, state: S) {.inline.} =
-  let n = problem.size
-  echo "Reactivate..."
-  problem.k.setActive((0..<n).toSeq())
-  state.ka.fill(0.0)
-  for l in 0..<n:
-    let al = state.a[l]
-    if al != 0.0:
-      let kl = problem.kernelRow(l)
-      for r in 0..<n:
-        state.ka[r] += al / problem.lmbda * kl[r]
-  state.activeSet = (0..<n).toSeq()
+proc kernelRow*(p: Problem, i: int): auto = p.k.getRow(i)
+proc kernelDiag*(p: Problem, i: int): auto {.inline.} = p.k.diag(i)
+proc kernelSetActive*(p: Problem, activeSet: seq[int]) {.inline.} = p.k.setActive(activeSet)
+proc kernelRestrictActive*(p: Problem, activeSet: seq[int]) {.inline.} = p.k.restrictActive(activeSet)
