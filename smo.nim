@@ -52,12 +52,11 @@ proc findMVP[P](problem: P, state: State): (int, int) {.inline.} =
   (iIdx, jIdx)
 
 proc computeDesc(
-  kii, kij, kjj, p, tMax0, tMax1, lmbda, regParam: float64
+  q, p, tMax0, tMax1, lmbda, regParam: float64
 ): float64 {.inline.} =
   if p <= 0.0 or tMax1 == 0.0:
     return 0.0
   let
-    q = kii + kjj - 2.0 * kij
     t = min(lmbda * p / max(q, regParam), min(tMax0, tMax1))
   return t * (p - 0.5 / lmbda * q * t)
 
@@ -93,7 +92,7 @@ proc findWS2[P](
       pj1l = gl - gj1
     if sign * problem.sign(l) >= 0.0 and state.dUp[l] > 0.0 and pi0l > 0.0:
       let di0l = computeDesc(
-        ki0i0, ki0[lIdx], kll,
+        ki0i0 + kll - 2.0 * ki0[lIdx] + problem.quad(state, i0) + problem.quad(state, l),
         pi0l, ti0Max, state.dUp[l],
         problem.lmbda, problem.regParam
       )
@@ -102,7 +101,7 @@ proc findWS2[P](
         dmax0 = di0l
     if sign * problem.sign(l) >= 0.0 and state.dDn[l] > 0.0 and pj1l > 0.0:
       let dj1l = computeDesc(
-        kj1j1, kj1[lIdx], kll,
+        kj1j1 + kll - 2.0 * kj1[lIdx] + problem.quad(state, j1) + problem.quad(state, l),
         pj1l, tj1Max, state.dDn[l],
         problem.lmbda, problem.regParam
       )
@@ -124,7 +123,7 @@ proc update[P](problem: P, iIdx, jIdx: int, state: State) {.inline.} =
   # find optimal step size
   let
     pij = state.g[i] - state.g[j]
-    qij = ki[iIdx] + kj[jIdx] - 2.0 * ki[jIdx]
+    qij = ki[iIdx] + kj[jIdx] - 2.0 * ki[jIdx] + problem.quad(state, i) + problem.quad(state, j)
   var
     tij = min(
       # unconstrained min

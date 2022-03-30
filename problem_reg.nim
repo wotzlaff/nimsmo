@@ -43,6 +43,9 @@ proc objectives*[S](problem: Problem, state: S): (float64, float64) {.inline.} =
 proc size*(problem: Problem): int {.inline.} = 2 * problem.y.len
 proc isShrunk*(problem: Problem): bool {.inline.} = problem.k.activeSize < problem.size
 
+proc quad*[S](problem: Problem, state: S, l: int): float64 {.inline.} =
+  0.0
+
 proc grad*[S](problem: Problem, state: S, l: int): float64 {.inline.} =
   state.ka[l] - problem.y[l mod problem.y.len] + problem.sign(l) * problem.epsilon
 

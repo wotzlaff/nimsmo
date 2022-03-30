@@ -1,4 +1,5 @@
 import std/algorithm
+import smooth_max
 
 type
   Problem*[K] = ref object
@@ -7,6 +8,7 @@ type
     lmbda*: float64
     regParam*: float64
     maxAsum*: float64
+    smoothingParam*: float64
 
 proc newProblem*[K](
   k: K, y: seq[float64];
@@ -24,9 +26,11 @@ proc objectives*[S](problem: Problem, state: S): (float64, float64) {.inline.} =
     lossDual = 0.0
   for l in 0..<problem.size:
     reg += state.ka[l] * state.a[l]
-    let dec = state.ka[l] + state.b + problem.sign(l) * state.c
-    lossPrimal += max(0.0, 1.0 - problem.y[l] * dec)
-    lossDual -= problem.y[l] * state.a[l]
+    let
+      dec = state.ka[l] + state.b + problem.sign(l) * state.c
+      ya = problem.y[l] * state.a[l]
+    lossPrimal += smoothMax2(1.0 - problem.y[l] * dec, problem.smoothingParam)
+    lossDual += dualSmoothMax2(ya, problem.smoothingParam) - ya
   let
     asumTerm = if problem.maxAsum < Inf: problem.maxAsum * state.c else: 0.0
     objPrimal = 0.5 * reg + lossPrimal + asumTerm
@@ -37,8 +41,11 @@ proc objectives*[S](problem: Problem, state: S): (float64, float64) {.inline.} =
 proc size*(problem: Problem): int {.inline.} = problem.y.len
 proc isShrunk*(problem: Problem): bool {.inline.} = problem.k.activeSize < problem.size
 
+proc quad*[S](problem: Problem, state: S, l: int): float64 {.inline.} =
+  2.0 * problem.smoothingParam * problem.lmbda
+
 proc grad*[S](problem: Problem, state: S, l: int): float64 {.inline.} =
-  state.ka[l] - problem.y[l]
+  state.ka[l] - problem.y[l] + problem.smoothingParam * problem.y[l] * (2.0 * problem.y[l] * state.a[l] - 1.0)
 
 proc upperBound*(problem: Problem, l: int): float64 {.inline.} =
   if problem.y[l] > 0.0: 1.0 else: 0.0
