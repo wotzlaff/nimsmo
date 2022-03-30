@@ -7,7 +7,7 @@ when isMainModule:
   randomize(42)
 
   # define training set
-  let n = 20
+  let n = 10000
   let nft = 5
   let x = collect:
     for i in 0..<n:
@@ -18,8 +18,7 @@ when isMainModule:
   # define parameters
   let gamma = 1.5
   let lmbda = 0.01
-  let kernel = newGaussianKernel(x, gamma)
-  let k = newCachedKernel(kernel, 2000)
+  let kernel = newGaussianKernel(x, gamma).cache(2000)
 
   let yr = collect:
     for xi in x:
@@ -28,11 +27,11 @@ when isMainModule:
   let y = collect:
     for yi in yr:
       if yi > ym: +1.0 else: -1.0
-  var p = newProblem(k, y, lmbda, 1e-10)
-  p.maxAsum = 0.5 * 0.5
-  let res = smo(p, verbose=1)
+  var p = newProblem(kernel, y, lmbda, 1e-10)
+  # p.maxAsum = 200.0
+  let res = smo(p, verbose=1000)
   echo fmt"It took {res.steps} steps in {res.time:.1f} seconds..."
-  echo k.cacheSummary()
+  echo kernel.cacheSummary()
 
   var asum = 0.0
   for (ai, yi) in zip(res.a, y):

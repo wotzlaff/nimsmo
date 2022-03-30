@@ -1,9 +1,9 @@
 import std/[math, sugar, sequtils]
 import base
-export base
 
 type
-  GaussianKernel* = ref object of Kernel[seq[seq[float64]]]
+  GaussianKernel* = ref object of Kernel
+    data: seq[seq[float64]]
     xsqr: seq[float64]
     gamma: float64
 
@@ -17,13 +17,14 @@ proc prepare(k: GaussianKernel) =
 
 proc newGaussianKernel*(data: seq[seq[float64]], gamma: float64): GaussianKernel =
   result = GaussianKernel(
+    size: data.len,
     data: data,
     gamma: gamma
   )
   result.resetActive()
   result.prepare()
 
-proc compute*(k: GaussianKernel, i: int): KernelRow =
+proc getRow*(k: GaussianKernel, i: int): KernelRow =
   let xi = k.data[i]
   let data = collect(newSeqOfCap(k.activeSize)):
     for j in k.activeSet:
@@ -34,7 +35,4 @@ proc compute*(k: GaussianKernel, i: int): KernelRow =
   KernelRow(data: data)
 
 proc diag*(k: GaussianKernel, i: int): float64 {.inline.} =
-  1.0
-
-proc getDiag*(k: GaussianKernel, i: int): float64 {.inline.} =
   1.0

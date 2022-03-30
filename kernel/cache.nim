@@ -1,6 +1,7 @@
 import lrucache
 import std/strformat
 import base
+export base
 
 type
   CachedKernel*[K] = ref object
@@ -9,7 +10,7 @@ type
     accesses: int
     misses: int
 
-proc newCachedKernel*[K](kernel: K, capacity: int): CachedKernel[K] =
+proc cache*[K](kernel: K, capacity: int): CachedKernel[K] =
   CachedKernel[K](
     cache: newLruCache[int, KernelRow](capacity),
     kernel: kernel,
@@ -17,11 +18,11 @@ proc newCachedKernel*[K](kernel: K, capacity: int): CachedKernel[K] =
     misses: 0,
   )
 
-proc getRow*[C](k: C, i: int): KernelRow {.inline.} =
+proc getRow*(k: CachedKernel, i: int): KernelRow {.inline.} =
   k.accesses += 1
   if i notin k.cache:
     k.misses += 1
-    k.cache[i] = k.kernel.compute(i)
+    k.cache[i] = k.kernel.getRow(i)
   k.cache[i]
 
 proc resetActive*(k: CachedKernel) {.inline.} =
@@ -34,7 +35,7 @@ proc restrictActive*(k: CachedKernel, activeSet: seq[int]) =
   k.kernel.restrictActive(activeSet)
 
 proc diag*(k: CachedKernel, i: int): float64 {.inline.} =
-  k.kernel.getDiag(i)
+  k.kernel.diag(i)
 
 proc activeSize*(k: CachedKernel): int {.inline.} =
   k.kernel.activeSize
