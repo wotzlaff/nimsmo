@@ -1,4 +1,4 @@
-import std/[algorithm, sugar]
+import std/[algorithm, sequtils, sugar]
 
 proc shrink*[P, S](problem: P, state: S, shrinkingThreshold: float64) =
   state.activeSet = collect:
