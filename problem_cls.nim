@@ -1,4 +1,4 @@
-import std/algorithm
+import std/[algorithm, sugar]
 import smooth_max
 
 type
@@ -60,3 +60,12 @@ proc kernelRow*(p: Problem, i: int): auto = p.k.getRow(i)
 proc kernelDiag*(p: Problem, i: int): auto {.inline.} = p.k.diag(i)
 proc kernelSetActive*(p: Problem, activeSet: seq[int]) {.inline.} = p.k.setActive(activeSet)
 proc kernelRestrictActive*(p: Problem, activeSet: seq[int]) {.inline.} = p.k.restrictActive(activeSet)
+
+proc supportIndex*[S](p: Problem, s: S; tol: float64 = 1e-6): seq[int] =
+  collect:
+    for l in 0..<p.size:
+      if s.a[l] > tol:
+        l
+
+proc dualCoeffs*[S](p: Problem, s: S): seq[float64] =
+  s.a

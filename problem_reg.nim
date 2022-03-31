@@ -67,3 +67,14 @@ proc kernelRow*(p: Problem, i: int): auto = p.k.getRow(i mod p.y.len)
 proc kernelDiag*(p: Problem, i: int): auto {.inline.} = p.k.diag(i mod p.y.len)
 proc kernelSetActive*(p: Problem, activeSet: seq[int]) {.inline.} = p.k.setActive(activeSet.map(x => x mod p.y.len))
 proc kernelRestrictActive*(p: Problem, activeSet: seq[int]) {.inline.} = p.k.restrictActive(activeSet.map(x => x mod p.y.len))
+
+proc supportIndex*[S](p: Problem, s: S; tol: float64 = 1e-6): seq[int] =
+  collect:
+    for l in 0..<p.y.len:
+      if s.a[l] > tol or -s.a[l+p.y.len] > tol:
+        l
+
+proc dualCoeffs*[S](p: Problem, s: S): seq[float64] =
+  collect:
+    for l in 0..<p.y.len:
+      s.a[l] + s.a[l+p.y.len]
