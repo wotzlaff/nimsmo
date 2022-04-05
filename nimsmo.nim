@@ -8,7 +8,8 @@ import kernel/[gaussian, cache]
 proc solve*(
   x, y: PyObject,
   lmbda, gamma: float;
-  smoothingParam: float = 0.0,
+  smoothingParam: float = 0.0;
+  tolViolation: float = 1e-6;
 ): Result {.exportpy.} =
   let x: seq[seq[float64]] = x.to(seq[seq[float64]])
   let y: seq[float64] = y.to(seq[float64])
@@ -21,7 +22,7 @@ proc solve*(
   # p.epsilon = 0.5
   # p.maxAsum = 0.01 * n.float64
   # let res = smo(p, verbose=1000, shrinkingPeriod=n)
-  let res = smo(p, verbose=1000, shrinkingPeriod=1000, logObjective=true)
+  let res = smo(p, verbose=1000, shrinkingPeriod=1000, logObjective=true, tolViolation=tolViolation)
   echo fmt"It took {res.steps} steps in {res.time:.1f} seconds..."
   echo kernel.cacheSummary()
   res
