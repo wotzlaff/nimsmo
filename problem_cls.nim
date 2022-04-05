@@ -2,21 +2,21 @@ import std/[algorithm, sequtils, sugar]
 import smooth_max
 
 type
-  Problem*[K] = ref object
+  Problem*[K, Y] = ref object
     k*: K
-    y: seq[float64]
+    y: Y
     lmbda*: float64
     regParam*: float64
     maxAsum*: float64
     smoothingParam*: float64
 
-proc newProblem*[K](
-  k: K, y: seq[float64];
+proc newProblem*[K, Y](
+  k: K, y: Y;
   lmbda: float64;
   regParam: float64 = 1e-10;
   maxAsum: float64 = Inf;
-): Problem[K] =
-  result = Problem[K](k: k, y: y, lmbda: lmbda, regParam: regParam, maxAsum: maxAsum)
+): Problem[K, Y] =
+  result = Problem[K, Y](k: k, y: y, lmbda: lmbda, regParam: regParam, maxAsum: maxAsum)
   result.k.setActive((0..<result.size).toSeq())
 
 proc objectives*[S](problem: Problem, state: S): (float64, float64) {.inline.} =
@@ -45,7 +45,8 @@ proc quad*[S](problem: Problem, state: S, l: int): float64 {.inline.} =
   2.0 * problem.smoothingParam * problem.lmbda
 
 proc grad*[S](problem: Problem, state: S, l: int): float64 {.inline.} =
-  state.ka[l] - problem.y[l] + problem.smoothingParam * problem.y[l] * (2.0 * problem.y[l] * state.a[l] - 1.0)
+  state.ka[l] - problem.y[l] + problem.smoothingParam * problem.y[l] * (2.0 *
+      problem.y[l] * state.a[l] - 1.0)
 
 proc upperBound*(problem: Problem, l: int): float64 {.inline.} =
   if problem.y[l] > 0.0: 1.0 else: 0.0
@@ -58,8 +59,10 @@ proc sign*(problem: Problem, l: int): float64 {.inline.} =
 
 proc kernelRow*(p: Problem, i: int): auto = p.k.getRow(i)
 proc kernelDiag*(p: Problem, i: int): auto {.inline.} = p.k.diag(i)
-proc kernelSetActive*(p: Problem, activeSet: seq[int]) {.inline.} = p.k.setActive(activeSet)
-proc kernelRestrictActive*(p: Problem, activeSet: seq[int]) {.inline.} = p.k.restrictActive(activeSet)
+proc kernelSetActive*(p: Problem, activeSet: seq[
+    int]) {.inline.} = p.k.setActive(activeSet)
+proc kernelRestrictActive*(p: Problem, activeSet: seq[
+    int]) {.inline.} = p.k.restrictActive(activeSet)
 
 proc supportIndex*[S](p: Problem, s: S; tol: float64 = 1e-6): seq[int] =
   collect:
