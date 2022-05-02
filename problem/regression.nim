@@ -1,5 +1,5 @@
 import std/[algorithm, sugar]
-import smooth_max
+import ../smooth_max
 
 type
   Problem*[K] = ref object

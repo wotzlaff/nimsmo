@@ -1,6 +1,6 @@
 import std/[random, math, sequtils, stats, strformat, sugar, times]
 import smo
-import problem_cls
+import problem/classification
 import kernel/[gaussian, cache]
 
 when isMainModule:

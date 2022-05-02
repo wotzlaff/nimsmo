@@ -51,5 +51,3 @@ obj = 0.5 * ka.dot(a) + val.sum()
 print(obj)
 
 print(a - y * dsmooth_max_p2(1.0 - y * d, smoothingParam))
-
-import torch

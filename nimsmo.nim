@@ -4,7 +4,7 @@ import std/[strformat, sugar]
 
 import from_numpy
 import smo
-import problem_cls
+import problem/classification
 import kernel/[gaussian, cache]
 
 proc solve*(

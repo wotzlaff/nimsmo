@@ -1,7 +1,6 @@
 import std/[math, sugar, sequtils]
 import arraymancer
 import base
-import ../from_numpy
 
 type
   GaussianKernel* = ref object of Kernel
