@@ -9,14 +9,22 @@ type
     regParam*: float64
     maxAsum*: float64
     smoothingParam*: float64
+    shift*: float64
 
 proc newProblem*[K, Y](
   k: K, y: Y;
   lmbda: float64;
   regParam: float64 = 1e-10;
   maxAsum: float64 = Inf;
+  shift: float64 = 1.0;
 ): Problem[K, Y] =
-  result = Problem[K, Y](k: k, y: y, lmbda: lmbda, regParam: regParam, maxAsum: maxAsum)
+  result = Problem[K, Y](
+    k: k, y: y,
+    lmbda: lmbda,
+    regParam: regParam,
+    maxAsum: maxAsum,
+    shift: shift,
+  )
   result.k.setActive((0..<result.size).toSeq())
 
 proc objectives*[S](problem: Problem, state: S): (float64, float64) {.inline.} =
@@ -29,8 +37,8 @@ proc objectives*[S](problem: Problem, state: S): (float64, float64) {.inline.} =
     let
       dec = state.ka[l] + state.b + problem.sign(l) * state.c
       ya = problem.y[l] * state.a[l]
-    lossPrimal += smoothMax2(1.0 - problem.y[l] * dec, problem.smoothingParam)
-    lossDual += dualSmoothMax2(ya, problem.smoothingParam) - ya
+    lossPrimal += smoothMax2(problem.shift - problem.y[l] * dec, problem.smoothingParam)
+    lossDual += dualSmoothMax2(ya, problem.smoothingParam) - problem.shift * ya
   let
     asumTerm = if problem.maxAsum < Inf: problem.maxAsum * state.c else: 0.0
     objPrimal = 0.5 * reg + lossPrimal + asumTerm
@@ -45,8 +53,10 @@ proc quad*[S](problem: Problem, state: S, l: int): float64 {.inline.} =
   2.0 * problem.smoothingParam * problem.lmbda
 
 proc grad*[S](problem: Problem, state: S, l: int): float64 {.inline.} =
-  state.ka[l] - problem.y[l] + problem.smoothingParam * problem.y[l] * (2.0 *
-      problem.y[l] * state.a[l] - 1.0)
+  (
+    state.ka[l] - problem.shift * problem.y[l] +
+    problem.smoothingParam * problem.y[l] * (2.0 * problem.y[l] * state.a[l] - 1.0)
+  )
 
 proc upperBound*(problem: Problem, l: int): float64 {.inline.} =
   if problem.y[l] > 0.0: 1.0 else: 0.0
