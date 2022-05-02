@@ -29,7 +29,9 @@ when isMainModule:
       if yi > ym: +1.0 else: -1.0
   var p = newProblem(kernel, y, lmbda)
   p.maxAsum = 0.01 * n.float64
-  let res = smo(p, verbose=1000, shrinkingPeriod=n)
+  p.smoothingParam = 4.0 * ln(2.0)
+  p.shift = 0.0
+  let res = smo(p, verbose=1000, shrinkingPeriod=n, logObjective=true)
   echo fmt"It took {res.steps} steps in {res.time:.1f} seconds..."
   echo kernel.cacheSummary()
   var

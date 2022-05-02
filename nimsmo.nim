@@ -12,6 +12,7 @@ proc solve*(
   lmbda, gamma: float;
   smoothingParam: float = 0.0;
   tolViolation: float = 1e-6;
+  shift: float = 1.0;
 ): Result {.exportpy.} =
   let x: seq[seq[float64]] = x.to(seq[seq[float64]])
   let y: seq[float64] = y.to(seq[float64])
@@ -21,11 +22,14 @@ proc solve*(
 
   var p = newProblem(kernel, y, lmbda)
   p.smoothingParam = smoothingParam
+  p.shift = shift
   let res = smo(
-    p, verbose = 1000,
-    shrinkingPeriod = 1000, logObjective = true,
-      tolViolation = tolViolation
-    )
+    p,
+    verbose=1000,
+    shrinkingPeriod=1000,
+    logObjective=true,
+    tolViolation=tolViolation,
+  )
   echo fmt"It took {res.steps} steps in {res.time:.1f} seconds..."
   echo kernel.cacheSummary()
   res
