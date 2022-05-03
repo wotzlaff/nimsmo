@@ -1,13 +1,13 @@
 import std/[random, math, sequtils, stats, strformat, sugar, times]
-import smo
-import problem/classification
-import kernel/[gaussian, cache]
+import nimsmo/smo
+import nimsmo/problem/classification
+import nimsmo/kernel/[gaussian, cache]
 
 when isMainModule:
   randomize(42)
 
   # define training set
-  let n = 10000
+  let n = 1000
   let nft = 5
   let x = collect:
     for i in 0..<n:
