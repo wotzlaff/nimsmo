@@ -4,11 +4,11 @@ from os.path import expanduser
 
 def build(setup_kwargs):
     """Called by poetry, the args are added to the kwargs for setup."""
-    nimbase = expanduser("~") + "/.choosenim/toolchains/nim-1.6.4/lib/nimbase.h"
+    nimbase = expanduser("~") + "/.choosenim/toolchains/nim-1.6.6/lib/nimbase.h"
     setup_kwargs.update(
         {
             "ext_modules": nythonize(
-                nimbase, [{"name": "nimsmo", "path": "src/nimsmo.nim"}]
+                nimbase, [{"name": "nimsmo", "path": "nimsmo/nimsmo.nim"}]
             ),
         }
     )

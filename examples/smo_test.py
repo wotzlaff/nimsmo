@@ -1,5 +1,4 @@
 import time
-import nimporter
 import nimsmo
 import numpy as np
 

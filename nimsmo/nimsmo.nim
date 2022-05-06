@@ -2,7 +2,10 @@ import arraymancer
 import nimpy
 import std/[strformat, sugar]
 
-import nimsmo/[from_numpy, smo, problem/classification, kernel/gaussian, kernel/cache]
+import from_numpy
+import smo
+import problem/[classification]
+import kernel/[gaussian, cache]
 
 proc solve*(
   x, y: PyObject,
