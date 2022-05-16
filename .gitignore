@@ -1,7 +1,8 @@
-__pycache__/
-build/
-src/*.so
-src/*.egg-info/
 *
 !/**/
 !*.*
+__pycache__/
+build/
+nimsmo.*.so
+nimsmo.egg-info/
+.vscode/
