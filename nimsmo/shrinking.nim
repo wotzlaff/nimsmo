@@ -15,7 +15,6 @@ proc shrink*[P, S](problem: P, state: S, shrinkingThreshold: float64) =
 
 proc unshrink*[P, S](problem: P, state: S) {.inline.} =
   let n = problem.size
-  echo "Reactivate..."
   problem.kernelSetActive((0..<n).toSeq())
   state.ka.fill(0.0)
   for l in 0..<n:

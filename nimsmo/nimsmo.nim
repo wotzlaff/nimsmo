@@ -9,6 +9,7 @@ proc solve*(
   x, y: PyObject,
   lmbda, gamma: float;
   smoothingParam: float = 0.0;
+  maxAsum: float = Inf;
   tolViolation: float = 1e-6;
   shift: float = 1.0;
   verbose: int = 0;
@@ -23,15 +24,16 @@ proc solve*(
   let kernel = newGaussianKernel(x, gamma).cache(2000)
 
   var p = newProblem(kernel, y, lmbda)
+  p.maxAsum = maxAsum
   p.smoothingParam = smoothingParam
   p.shift = shift
   let res = smo(
     p,
-    verbose=verbose,
-    shrinkingPeriod=if shrinkingPeriod > 0: shrinkingPeriod else: n,
+    verbose = verbose,
+    shrinkingPeriod = if shrinkingPeriod > 0: shrinkingPeriod else: n,
     # logObjective=true,
-    tolViolation=tolViolation,
-    maxSteps=maxSteps,
+    tolViolation = tolViolation,
+    maxSteps = maxSteps,
   )
   if verbose > 0:
     echo fmt"It took {res.steps} steps in {res.time:.1f} seconds..."
