@@ -15,7 +15,7 @@ smoothingParam = np.log(2.0) / 0.25
 shift = 0.0
 
 t0 = time.time()
-res = nimsmo.solve(
+res = nimsmo.solveClassification(
     x.tolist(),
     y.tolist(),
     lmbda,

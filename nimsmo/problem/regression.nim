@@ -1,4 +1,4 @@
-import std/[algorithm, sugar]
+import std/[algorithm, sugar, sequtils]
 import ../smooth_max
 
 type
