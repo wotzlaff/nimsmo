@@ -18,6 +18,8 @@ proc solveClassification*(
   cacheSize: int = 10_000;
   logObjective: bool = false;
   timeLimit: float = 0.0;
+  callback: proc(res: Result): bool = nil;
+  callbackPeriod: int = 1;
 ): Result {.exportpy.} =
   let x: seq[seq[float64]] = x.to(seq[seq[float64]])
   let y: seq[float64] = y.to(seq[float64])
@@ -38,6 +40,8 @@ proc solveClassification*(
     maxSteps = maxSteps,
     logObjective = logObjective,
     timeLimit = timeLimit,
+    callback = callback,
+    callbackPeriod = callbackPeriod,
   )
   if verbose > 0:
     echo fmt"It took {res.steps} steps in {res.time:.1f} seconds..."
@@ -57,6 +61,8 @@ proc solveRegression*(
   cacheSize: int = 10_000;
   logObjective: bool = false;
   timeLimit: float = 0.0;
+  callback: proc(res: Result): bool = nil;
+  callbackPeriod: int = 1;
 ): Result {.exportpy.} =
   let x: seq[seq[float64]] = x.to(seq[seq[float64]])
   let y: seq[float64] = y.to(seq[float64])
@@ -77,6 +83,8 @@ proc solveRegression*(
     maxSteps = maxSteps,
     logObjective = logObjective,
     timeLimit = timeLimit,
+    callback = callback,
+    callbackPeriod = callbackPeriod,
   )
   if verbose > 0:
     echo fmt"It took {res.steps} steps in {res.time:.1f} seconds..."

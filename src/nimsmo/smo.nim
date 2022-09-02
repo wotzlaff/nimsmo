@@ -178,6 +178,8 @@ proc smo*[P](
   shrinkingPeriod: int = 1000;
   shrinkingThreshold: float = 1.0;
   timeLimit: float = 0.0;
+  callback: proc(res: Result): bool = nil;
+  callbackPeriod: int = 1;
 ): Result =
   # initialize
   let t0 = cpuTime()
@@ -189,10 +191,25 @@ proc smo*[P](
       else:
         echo fmt"      step       time  violation obj(d:est)     asum   active/size"
     for step in 1..maxSteps:
-      if timeLimit > 0.0 and cpuTime() - t0 > timeLimit:
+      let dt = cpuTime() - t0
+      if timeLimit > 0.0 and dt > timeLimit:
         if verbose > 0:
           echo "time limit reached"
         break mainPart
+
+      if callbackPeriod > 0 and step mod callbackPeriod == 0:
+        if callback != nil:
+          result.steps = step
+          result.time = dt
+          result.violation = state.violation
+          result.a = state.a
+          result.b = state.b
+          result.c = state.c
+          result.value = state.value
+          let terminate = callback(result)
+          if terminate:
+            echo "terminated by callback"
+            break mainPart
 
       if shrinkingPeriod > 0 and step mod shrinkingPeriod == 0:
         problem.shrink(state, shrinkingThreshold)
