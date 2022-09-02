@@ -8,17 +8,23 @@ type
     lmbda*: float64
     regParam*: float64
     smoothingParam*: float64
-    epsilon*: float64
     maxAsum*: float64
+    epsilon*: float64
 
 proc newProblem*[K](
   k: K, y: seq[float64];
   lmbda: float64;
   regParam: float64 = 1e-10;
-  epsilon: float64 = 1e-6;
   maxAsum: float64 = Inf;
-  ): Problem[K] =
-  result = Problem[K](k: k, y: y, lmbda: lmbda, regParam: regParam, epsilon: epsilon, maxAsum: maxAsum)
+  epsilon: float64 = 1e-6;
+): Problem[K] =
+  result = Problem[K](
+    k: k, y: y,
+    lmbda: lmbda,
+    regParam: regParam,
+    maxAsum: maxAsum,
+    epsilon: epsilon,
+  )
   let idxs = (0..<y.len).toSeq()
   result.k.setActive(idxs & idxs)
 

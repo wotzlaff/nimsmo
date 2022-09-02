@@ -2,23 +2,23 @@ import std/[algorithm, sequtils, sugar]
 import ../smooth_max
 
 type
-  Problem*[K, Y] = ref object
+  Problem*[K] = ref object
     k*: K
-    y: Y
+    y: seq[float64]
     lmbda*: float64
     regParam*: float64
-    maxAsum*: float64
     smoothingParam*: float64
+    maxAsum*: float64
     shift*: float64
 
-proc newProblem*[K, Y](
-  k: K, y: Y;
+proc newProblem*[K](
+  k: K, y: seq[float64];
   lmbda: float64;
   regParam: float64 = 1e-10;
   maxAsum: float64 = Inf;
   shift: float64 = 1.0;
-): Problem[K, Y] =
-  result = Problem[K, Y](
+): Problem[K] =
+  result = Problem[K](
     k: k, y: y,
     lmbda: lmbda,
     regParam: regParam,

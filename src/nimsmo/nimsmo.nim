@@ -8,10 +8,10 @@ import kernel/[gaussian, cache]
 proc solveClassification*(
   x, y: PyObject,
   lmbda, gamma: float;
+  shift: float = 1.0;
   smoothingParam: float = 0.0;
   maxAsum: float = Inf;
   tol: float = 1e-6;
-  shift: float = 1.0;
   verbose: int = 0;
   shrinkingPeriod: int = 0;
   maxSteps: int = 1_000_000_000;
@@ -51,7 +51,6 @@ proc solveRegression*(
   smoothingParam: float = 0.0;
   maxAsum: float = Inf;
   tol: float = 1e-6;
-  shift: float = 0.0;
   verbose: int = 0;
   shrinkingPeriod: int = 0;
   maxSteps: int = 1_000_000_000;
