@@ -190,6 +190,8 @@ proc smo*[P](
         echo fmt"      step       time  violation obj(d:est)     asum   active/size"
     for step in 1..maxSteps:
       if timeLimit > 0.0 and cpuTime() - t0 > timeLimit:
+        if verbose > 0:
+          echo "time limit reached"
         break mainPart
 
       if shrinkingPeriod > 0 and step mod shrinkingPeriod == 0:
