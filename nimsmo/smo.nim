@@ -92,7 +92,8 @@ proc findWS2[P](
       pj1l = gl - gj1
     if sign * problem.sign(l) >= 0.0 and state.dUp[l] > 0.0 and pi0l > 0.0:
       let di0l = computeDesc(
-        ki0i0 + kll - 2.0 * ki0[lIdx] + problem.quad(state, i0) + problem.quad(state, l),
+        ki0i0 + kll - 2.0 * ki0[lIdx] + problem.quad(state, i0) + problem.quad(
+            state, l),
         pi0l, ti0Max, state.dUp[l],
         problem.lmbda, problem.regParam
       )
@@ -101,7 +102,8 @@ proc findWS2[P](
         dmax0 = di0l
     if sign * problem.sign(l) >= 0.0 and state.dDn[l] > 0.0 and pj1l > 0.0:
       let dj1l = computeDesc(
-        kj1j1 + kll - 2.0 * kj1[lIdx] + problem.quad(state, j1) + problem.quad(state, l),
+        kj1j1 + kll - 2.0 * kj1[lIdx] + problem.quad(state, j1) + problem.quad(
+            state, l),
         pj1l, tj1Max, state.dDn[l],
         problem.lmbda, problem.regParam
       )
@@ -123,7 +125,8 @@ proc update[P](problem: P, iIdx, jIdx: int, state: State) {.inline.} =
   # find optimal step size
   let
     pij = state.g[i] - state.g[j]
-    qij = ki[iIdx] + kj[jIdx] - 2.0 * ki[jIdx] + problem.quad(state, i) + problem.quad(state, j)
+    qij = ki[iIdx] + kj[jIdx] - 2.0 * ki[jIdx] + problem.quad(state, i) +
+        problem.quad(state, j)
   var
     tij = min(
       # unconstrained min
@@ -167,7 +170,7 @@ proc newState[P](problem: P): State =
 
 proc smo*[P](
   problem: P,
-  tolViolation: float64 = 1e-4;
+  tol: float64 = 1e-4;
   secondOrder: bool = true;
   logObjective: bool = false;
   verbose: int = 0;
@@ -185,7 +188,7 @@ proc smo*[P](
 
       # find max violation pair
       let (i0Idx, j1Idx) = problem.findMVP(state)
-      let optimal = state.violation < tolViolation
+      let optimal = state.violation < tol
 
       # print progress
       if verbose > 0 and (step mod verbose == 0 or optimal):

@@ -10,7 +10,7 @@ proc solveClassification*(
   lmbda, gamma: float;
   smoothingParam: float = 0.0;
   maxAsum: float = Inf;
-  tolViolation: float = 1e-6;
+  tol: float = 1e-6;
   shift: float = 1.0;
   verbose: int = 0;
   shrinkingPeriod: int = 0;
@@ -33,9 +33,9 @@ proc solveClassification*(
     p,
     verbose = verbose,
     shrinkingPeriod = if shrinkingPeriod > 0: shrinkingPeriod else: n,
-    tolViolation = tolViolation,
+    tol = tol,
     maxSteps = maxSteps,
-    logObjective=logObjective,
+    logObjective = logObjective,
   )
   if verbose > 0:
     echo fmt"It took {res.steps} steps in {res.time:.1f} seconds..."
@@ -48,7 +48,7 @@ proc solveRegression*(
   epsilon: float = 1e-6;
   smoothingParam: float = 0.0;
   maxAsum: float = Inf;
-  tolViolation: float = 1e-6;
+  tol: float = 1e-6;
   shift: float = 0.0;
   verbose: int = 0;
   shrinkingPeriod: int = 0;
@@ -71,7 +71,7 @@ proc solveRegression*(
     p,
     verbose = verbose,
     shrinkingPeriod = if shrinkingPeriod > 0: shrinkingPeriod else: n,
-    tolViolation = tolViolation,
+    tol = tol,
     maxSteps = maxSteps,
     logObjective = logObjective,
   )
