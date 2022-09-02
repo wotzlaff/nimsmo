@@ -177,6 +177,7 @@ proc smo*[P](
   maxSteps: int = 1_000_000_000;
   shrinkingPeriod: int = 1000;
   shrinkingThreshold: float = 1.0;
+  timeLimit: float = 0.0;
 ): Result =
   # initialize
   let t0 = cpuTime()
@@ -188,6 +189,9 @@ proc smo*[P](
       else:
         echo fmt"      step       time  violation obj(d:est)     asum   active/size"
     for step in 1..maxSteps:
+      if timeLimit > 0.0 and cpuTime() - t0 > timeLimit:
+        break mainPart
+
       if shrinkingPeriod > 0 and step mod shrinkingPeriod == 0:
         problem.shrink(state, shrinkingThreshold)
 
