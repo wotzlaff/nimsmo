@@ -8,7 +8,7 @@ def build(setup_kwargs):
     setup_kwargs.update(
         {
             "ext_modules": nythonize(
-                nimbase, [{"name": "nimsmo", "path": "nimsmo/nimsmo.nim"}]
+                nimbase, [{"name": "nimsmo", "path": "src/nimsmo/nimsmo.nim"}]
             ),
         }
     )
