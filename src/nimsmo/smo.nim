@@ -182,6 +182,11 @@ proc smo*[P](
   let t0 = cpuTime()
   var state = newState(problem)
   block mainPart:
+    if verbose > 0:
+      if logObjective:
+        echo fmt"      step       time  violation        gap     obj(p)     obj(d) obj(d:est)    asum   active/size"
+      else:
+        echo fmt"      step       time  violation obj(d:est)     asum   active/size"
     for step in 1..maxSteps:
       if shrinkingPeriod > 0 and step mod shrinkingPeriod == 0:
         problem.shrink(state, shrinkingThreshold)
@@ -196,9 +201,9 @@ proc smo*[P](
         if logObjective:
           let (objPrimal, objDual) = problem.objectives(state)
           state.gap = objPrimal + objDual
-          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.gap:10.6f} {objPrimal:10f} {-objDual:10f} {state.value:10f}{state.asum:8.2f} {state.activeSet.len:8d} of {problem.size:8d}"
+          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.gap:10.6f} {objPrimal:10f} {-objDual:10f} {state.value:10f}{state.asum:8.2f} {state.activeSet.len:8d}/{problem.size}"
         else:
-          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.value:10f} {state.asum:8.2f} {state.activeSet.len:8d} of {problem.size:8d}"
+          echo fmt"{step:10d} {dt:10.2f} {state.violation:10.6f} {state.value:10f} {state.asum:8.2f} {state.activeSet.len:8d}/{problem.size}"
 
       # check convergence
       if optimal:
