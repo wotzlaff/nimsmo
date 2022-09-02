@@ -41,7 +41,7 @@ proc activeSize*(k: CachedKernel): int {.inline.} =
   k.kernel.activeSize
 
 proc cacheSummary*(k: CachedKernel): string =
-  fmt"{k.misses} of {k.accesses} = {k.misses / k.accesses * 100:.1f}%"
+  fmt"Cache misses: {k.misses} of {k.accesses} = {k.misses / k.accesses * 100:.1f}%"
 
 proc size*(k: CachedKernel): int =
   k.kernel.size
