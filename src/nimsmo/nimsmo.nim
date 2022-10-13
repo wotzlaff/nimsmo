@@ -25,6 +25,19 @@ proc solveClassification*(
   let y: seq[float64] = y.to(seq[float64])
   let n = x.len
 
+  if verbose > 0:
+    echo "Starting classification SMO on dataset"
+    echo fmt" {n} x {x[0].len}"
+    echo "with parameters"
+    echo fmt" lmbda           = {lmbda}"
+    echo fmt" gamma           = {gamma}"
+    echo fmt" shift           = {shift}"
+    echo fmt" smoothingParam  = {smoothingParam}"
+    echo fmt" maxAsum         = {maxAsum}"
+    echo fmt" tol             = {tol}"
+    echo fmt" shrinkingPeriod = {shrinkingPeriod}"
+    echo fmt" cacheSize       = {cacheSize}"
+
   # define parameters
   let kernel = newGaussianKernel(x, gamma).cache(cacheSize)
 
@@ -67,6 +80,19 @@ proc solveRegression*(
   let x: seq[seq[float64]] = x.to(seq[seq[float64]])
   let y: seq[float64] = y.to(seq[float64])
   let n = x.len
+
+  if verbose > 0:
+    echo "Starting regression SMO on dataset"
+    echo fmt" {n} x {x[0].len}"
+    echo "with parameters"
+    echo fmt" lmbda           = {lmbda}"
+    echo fmt" gamma           = {gamma}"
+    echo fmt" epsilon         = {epsilon}"
+    echo fmt" smoothingParam  = {smoothingParam}"
+    echo fmt" maxAsum         = {maxAsum}"
+    echo fmt" tol             = {tol}"
+    echo fmt" shrinkingPeriod = {shrinkingPeriod}"
+    echo fmt" cacheSize       = {cacheSize}"
 
   # define parameters
   let kernel = newGaussianKernel(x, gamma).cache(cacheSize)
