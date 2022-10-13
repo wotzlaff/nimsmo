@@ -21,7 +21,8 @@ res = nimsmo.solveClassification(
     lmbda,
     gamma,
     smoothingParam=smoothingParam,
-    shift=shift
+    shift=shift,
+    verbose=100,
 )
 t1 = time.time()
 print(t1 - t0)
