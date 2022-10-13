@@ -6,3 +6,4 @@ build/
 nimsmo.*.so
 nimsmo.egg-info/
 .vscode/
+setup.py
