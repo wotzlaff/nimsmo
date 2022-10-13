@@ -216,7 +216,7 @@ proc smo*[P](
 
       # find max violation pair
       let (i0Idx, j1Idx) = problem.findMVP(state)
-      let optimal = state.violation < tol
+      let optimal = problem.lmbda * state.violation < tol
 
       # print progress
       if verbose > 0 and (step mod verbose == 0 or optimal):
