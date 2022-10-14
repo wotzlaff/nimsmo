@@ -7,6 +7,7 @@ np.random.seed(42)
 n, nft = 500, 10
 x = np.random.rand(n, nft)
 y = np.sin(np.pi * x).sum(axis=1)
+w = np.random.rand(n)
 
 lmbda = 0.1
 gamma = 1.5
@@ -19,7 +20,7 @@ res = nimsmo.solveRegression(
     y.tolist(),
     lmbda,
     gamma,
-    w=np.random.rand(n).tolist(),
+    w=w.tolist(),
     smoothingParam=smoothingParam,
     epsilon=epsilon,
     verbose=100,
@@ -70,10 +71,14 @@ r[:n] -= y
 r[n:] -= y
 val = smooth_max_p2(-sign * r - epsilon, smoothingParam)
 reg = ka.dot(a)
+val[:n] *= w
+val[n:] *= w
 loss = val.sum()
 obj = 0.5 * reg + loss
 print(f'objective value {obj} = 0.5 * {reg} + {loss}')
 
 g = -sign * dsmooth_max_p2(-sign * r - epsilon, smoothingParam)
+g[:n] *= w
+g[n:] *= w
 r = a + g
 print('residual:', np.mean(np.array(r)**2))
