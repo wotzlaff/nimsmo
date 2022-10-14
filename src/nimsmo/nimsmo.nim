@@ -5,10 +5,12 @@ import smo
 import problem/[classification, regression]
 import kernel/[gaussian, cache]
 
+let py = pyBuiltinsModule()
+
 proc solveClassification*(
   x, y: PyObject,
   lmbda, gamma: float;
-  w: PyObject;
+  w: PyObject = py.None;
   shift: float = 1.0;
   smoothingParam: float = 0.0;
   maxAsum: float = Inf;
@@ -25,7 +27,7 @@ proc solveClassification*(
   let x: seq[seq[float64]] = x.to(seq[seq[float64]])
   let y: seq[float64] = y.to(seq[float64])
   let n = x.len
-  let w: seq[float64] = if w.isNil: repeat(1.0, n) else: w.to(seq[float64])
+  let w: seq[float64] = if w == py.None: repeat(1.0, n) else: w.to(seq[float64])
 
   if verbose > 0:
     echo "Starting classification SMO on dataset"
@@ -66,7 +68,7 @@ proc solveClassification*(
 proc solveRegression*(
   x, y: PyObject,
   lmbda, gamma: float;
-  w: PyObject;
+  w: PyObject = py.None;
   epsilon: float = 1e-6;
   smoothingParam: float = 0.0;
   maxAsum: float = Inf;
@@ -83,7 +85,7 @@ proc solveRegression*(
   let x: seq[seq[float64]] = x.to(seq[seq[float64]])
   let y: seq[float64] = y.to(seq[float64])
   let n = x.len
-  let w: seq[float64] = if w.isNil: repeat(1.0, n) else: w.to(seq[float64])
+  let w: seq[float64] = if w == py.None: repeat(1.0, n) else: w.to(seq[float64])
 
   if verbose > 0:
     echo "Starting regression SMO on dataset"
