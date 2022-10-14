@@ -38,13 +38,12 @@ proc objectives*[S](problem: Problem, state: S): (float64, float64) {.inline.} =
   for l in 0..<problem.size:
     reg += state.ka[l] * state.a[l]
     let
-      dec = state.ka[l] + state.b
-      ya = problem.y[l mod problem.y.len] * state.a[l]
-    if l < problem.y.len:
-      lossPrimal += smoothMax2(dec - problem.y[l] - state.c, problem.smoothingParam)
-    else:
-      lossPrimal += smoothMax2(problem.y[l - problem.y.len] - dec - state.c, problem.smoothingParam)
-    lossDual += dualSmoothMax2(state.a[l] * problem.sign(l), problem.smoothingParam) - ya
+      yl = problem.y[l mod problem.y.len]
+      wl = problem.w[l mod problem.y.len]
+      dec = state.ka[l] + state.b - problem.sign(l) * state.c
+      ya = yl * state.a[l]
+    lossPrimal += wl * smoothMax2(problem.sign(l) * (dec - yl) - problem.epsilon, problem.smoothingParam)
+    lossDual += dualSmoothMax2(state.a[l] * problem.sign(l), problem.smoothingParam) - ya + problem.epsilon * problem.sign(l) * state.a[l]
   let
     asumTerm = if problem.maxAsum < Inf: problem.maxAsum * state.c else: 0.0
     objPrimal = 0.5 * reg + lossPrimal + asumTerm
