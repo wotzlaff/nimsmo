@@ -114,7 +114,7 @@ proc solveRegression*(
   let res = smo(
     p,
     verbose = verbose,
-    shrinkingPeriod = if shrinkingPeriod > 0: shrinkingPeriod else: n,
+    shrinkingPeriod = if shrinkingPeriod >= 0: shrinkingPeriod else: n,
     tol = tol,
     maxSteps = maxSteps,
     logObjective = logObjective,
