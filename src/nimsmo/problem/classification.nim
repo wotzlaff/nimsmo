@@ -4,7 +4,8 @@ import ../smooth_max
 type
   Problem*[K] = ref object
     k*: K
-    y: seq[float64]
+    y*: seq[float64]
+    w*: seq[float64]
     lmbda*: float64
     regParam*: float64
     smoothingParam*: float64
@@ -12,14 +13,15 @@ type
     shift*: float64
 
 proc newProblem*[K](
-  k: K, y: seq[float64];
-  lmbda: float64;
+  k: K, y: seq[float64], lmbda: float64;
+  w: seq[float64] = @[];
   regParam: float64 = 1e-10;
   maxAsum: float64 = Inf;
   shift: float64 = 1.0;
 ): Problem[K] =
   result = Problem[K](
     k: k, y: y,
+    w: if w.len > 0: w else: repeat(1.0, y.len),
     lmbda: lmbda,
     regParam: regParam,
     maxAsum: maxAsum,
@@ -59,10 +61,10 @@ proc grad*[S](problem: Problem, state: S, l: int): float64 {.inline.} =
   )
 
 proc upperBound*(problem: Problem, l: int): float64 {.inline.} =
-  if problem.y[l] > 0.0: 1.0 else: 0.0
+  if problem.y[l] > 0.0: problem.w[l] else: 0.0
 
 proc lowerBound*(problem: Problem, l: int): float64 {.inline.} =
-  if problem.y[l] > 0.0: 0.0 else: -1.0
+  if problem.y[l] > 0.0: 0.0 else: -problem.w[l]
 
 proc sign*(problem: Problem, l: int): float64 {.inline.} =
   if problem.y[l] > 0.0: 1.0 else: -1.0

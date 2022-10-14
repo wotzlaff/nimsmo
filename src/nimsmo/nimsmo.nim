@@ -1,5 +1,5 @@
 import nimpy
-import std/[strformat, sugar]
+import std/[strformat, sugar, sequtils]
 
 import smo
 import problem/[classification, regression]
@@ -8,6 +8,7 @@ import kernel/[gaussian, cache]
 proc solveClassification*(
   x, y: PyObject,
   lmbda, gamma: float;
+  w: PyObject;
   shift: float = 1.0;
   smoothingParam: float = 0.0;
   maxAsum: float = Inf;
@@ -24,6 +25,7 @@ proc solveClassification*(
   let x: seq[seq[float64]] = x.to(seq[seq[float64]])
   let y: seq[float64] = y.to(seq[float64])
   let n = x.len
+  let w: seq[float64] = if w.isNil: repeat(1.0, n) else: w.to(seq[float64])
 
   if verbose > 0:
     echo "Starting classification SMO on dataset"
@@ -41,7 +43,7 @@ proc solveClassification*(
   # define parameters
   let kernel = newGaussianKernel(x, gamma).cache(cacheSize)
 
-  var p = classification.newProblem(kernel, y, lmbda)
+  var p = classification.newProblem(kernel, y, lmbda, w=w)
   p.maxAsum = maxAsum
   p.smoothingParam = smoothingParam
   p.shift = shift
@@ -64,6 +66,7 @@ proc solveClassification*(
 proc solveRegression*(
   x, y: PyObject,
   lmbda, gamma: float;
+  w: PyObject;
   epsilon: float = 1e-6;
   smoothingParam: float = 0.0;
   maxAsum: float = Inf;
@@ -80,6 +83,7 @@ proc solveRegression*(
   let x: seq[seq[float64]] = x.to(seq[seq[float64]])
   let y: seq[float64] = y.to(seq[float64])
   let n = x.len
+  let w: seq[float64] = if w.isNil: repeat(1.0, n) else: w.to(seq[float64])
 
   if verbose > 0:
     echo "Starting regression SMO on dataset"
@@ -97,7 +101,7 @@ proc solveRegression*(
   # define parameters
   let kernel = newGaussianKernel(x, gamma).cache(cacheSize)
 
-  var p = regression.newProblem(kernel, y, lmbda)
+  var p = regression.newProblem(kernel, y, lmbda, w=w)
   p.epsilon = epsilon
   p.maxAsum = maxAsum
   p.smoothingParam = smoothingParam
