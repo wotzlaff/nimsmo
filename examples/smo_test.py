@@ -23,6 +23,7 @@ res = nimsmo.solveClassification(
     smoothingParam=smoothingParam,
     shift=shift,
     verbose=100,
+    logObjective=True,
 )
 t1 = time.time()
 print(t1 - t0)
