@@ -19,6 +19,7 @@ res = nimsmo.solveRegression(
     y.tolist(),
     lmbda,
     gamma,
+    w=np.random.rand(n).tolist(),
     smoothingParam=smoothingParam,
     epsilon=epsilon,
     verbose=100,

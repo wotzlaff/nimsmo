@@ -39,8 +39,8 @@ proc objectives*[S](problem: Problem, state: S): (float64, float64) {.inline.} =
     let
       dec = state.ka[l] + state.b + problem.sign(l) * state.c
       ya = problem.y[l] * state.a[l]
-    lossPrimal += smoothMax2(problem.shift - problem.y[l] * dec, problem.smoothingParam)
-    lossDual += dualSmoothMax2(ya, problem.smoothingParam) - problem.shift * ya
+    lossPrimal += problem.w[l] * smoothMax2(problem.shift - problem.y[l] * dec, problem.smoothingParam)
+    lossDual += problem.w[l] * dualSmoothMax2(ya / problem.w[l], problem.smoothingParam) - problem.shift * ya
   let
     asumTerm = if problem.maxAsum < Inf: problem.maxAsum * state.c else: 0.0
     objPrimal = 0.5 * reg + lossPrimal + asumTerm
@@ -52,12 +52,12 @@ proc size*(problem: Problem): int {.inline.} = problem.y.len
 proc isShrunk*(problem: Problem): bool {.inline.} = problem.k.activeSize < problem.size
 
 proc quad*[S](problem: Problem, state: S, l: int): float64 {.inline.} =
-  2.0 * problem.smoothingParam * problem.lmbda
+  2.0 * problem.smoothingParam * problem.lmbda / problem.w[l]
 
 proc grad*[S](problem: Problem, state: S, l: int): float64 {.inline.} =
   (
     state.ka[l] - problem.shift * problem.y[l] +
-    problem.smoothingParam * problem.y[l] * (2.0 * problem.y[l] * state.a[l] - 1.0)
+    problem.smoothingParam * problem.y[l] * (2.0 * problem.y[l] * state.a[l] / problem.w[l] - 1.0)
   )
 
 proc upperBound*(problem: Problem, l: int): float64 {.inline.} =

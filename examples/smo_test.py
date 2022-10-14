@@ -8,6 +8,7 @@ n, nft = 500, 10
 x = np.random.rand(n, nft)
 yr = np.sin(np.pi * x).sum(axis=1)
 y = np.where(yr > np.median(yr), 1.0, -1.0)
+w = np.random.rand(n).tolist()
 
 lmbda = 0.01
 gamma = 1.5
@@ -20,6 +21,7 @@ res = nimsmo.solveClassification(
     y.tolist(),
     lmbda,
     gamma,
+    w=w,
     smoothingParam=smoothingParam,
     shift=shift,
     verbose=100,
@@ -65,11 +67,11 @@ k = kernel(x, x_sv, gamma)
 ka = k.dot(a[idx_sv]) / lmbda
 d = ka + b
 
-val = smooth_max_p2(shift - y * d, smoothingParam)
+val = w * smooth_max_p2(shift - y * d, smoothingParam)
 obj = 0.5 * ka.dot(a) + val.sum()
 print('objective value:', obj)
 
-g = -y * dsmooth_max_p2(shift - y * d, smoothingParam)
+g = -y * w * dsmooth_max_p2(shift - y * d, smoothingParam)
 r = a + g
 print('residual:', np.mean(np.array(r)**2))
 

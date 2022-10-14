@@ -39,11 +39,12 @@ proc objectives*[S](problem: Problem, state: S): (float64, float64) {.inline.} =
     reg += state.ka[l] * state.a[l]
     let
       yl = problem.y[l mod problem.y.len]
-      wl = problem.w[l mod problem.y.len]
-      dec = state.ka[l] + state.b - problem.sign(l) * state.c
+      wl = problem.weight(l)
+      sl = problem.sign(l)
+      dec = state.ka[l] + state.b - sl * state.c
       ya = yl * state.a[l]
-    lossPrimal += wl * smoothMax2(problem.sign(l) * (dec - yl) - problem.epsilon, problem.smoothingParam)
-    lossDual += dualSmoothMax2(state.a[l] * problem.sign(l), problem.smoothingParam) - ya + problem.epsilon * problem.sign(l) * state.a[l]
+    lossPrimal += wl * smoothMax2(sl * (dec - yl) - problem.epsilon, problem.smoothingParam)
+    lossDual += wl * dualSmoothMax2(state.a[l] / wl * sl, problem.smoothingParam) - ya + problem.epsilon * sl * state.a[l]
   let
     asumTerm = if problem.maxAsum < Inf: problem.maxAsum * state.c else: 0.0
     objPrimal = 0.5 * reg + lossPrimal + asumTerm
@@ -55,11 +56,11 @@ proc size*(problem: Problem): int {.inline.} = 2 * problem.y.len
 proc isShrunk*(problem: Problem): bool {.inline.} = problem.k.activeSize < problem.size
 
 proc quad*[S](problem: Problem, state: S, l: int): float64 {.inline.} =
-  2.0 * problem.smoothingParam * problem.lmbda
+  2.0 * problem.smoothingParam * problem.lmbda / problem.weight(l)
 
 proc grad*[S](problem: Problem, state: S, l: int): float64 {.inline.} =
   let yl = problem.y[l mod problem.y.len]
-  state.ka[l] - yl + problem.sign(l) * (problem.epsilon + problem.smoothingParam * (2.0 * problem.sign(l) * state.a[l] - 1.0))
+  state.ka[l] - yl + problem.sign(l) * (problem.epsilon + problem.smoothingParam * (2.0 * problem.sign(l) * state.a[l] / problem.weight(l) - 1.0))
 
 proc upperBound*(problem: Problem, l: int): float64 {.inline.} =
   if l < problem.y.len: problem.w[l] else: 0.0
@@ -69,6 +70,9 @@ proc lowerBound*(problem: Problem, l: int): float64 {.inline.} =
 
 proc sign*(problem: Problem, l: int): float64 {.inline.} =
   if l < problem.y.len: 1.0 else: -1.0
+
+proc weight*(problem: Problem, l: int): float64 {.inline.} =
+  problem.w[l mod problem.w.len]
 
 proc kernelRow*(p: Problem, i: int): auto = p.k.getRow(i mod p.y.len)
 proc kernelDiag*(p: Problem, i: int): auto {.inline.} = p.k.diag(i mod p.y.len)
