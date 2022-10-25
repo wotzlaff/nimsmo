@@ -14,10 +14,10 @@ jobs:
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.11.1
       env:
-        CIBW_BUILD: cp38-manylinux_x86_64 cp39-manylinux_x86_64 cp310-manylinux_x86_64
+        CIBW_BUILD: cp38-manylinux_x86_64 cp39-manylinux_x86_64 cp310-manylinux_x86_64 cp311-manylinux_x86_64
         CIBW_ENVIRONMENT_LINUX: CHOOSENIM_CHOOSE_VERSION="1.6.8" PATH="/root/.nimble/bin:$PATH"
-        CIBW_BEFORE_ALL_LINUX: sh -c "curl -O https://nim-lang.org/choosenim/init.sh && sh init.sh -y"
-        CIBW_BEFORE_BUILD: nimble install
+        CIBW_BEFORE_ALL_LINUX: curl -O https://nim-lang.org/choosenim/init.sh && sh init.sh -y
+        CIBW_BEFORE_BUILD: nimble install -y
       with:
         package-dir: .
         output-dir: wheelhouse
@@ -48,7 +48,7 @@ jobs:
           name: artifact
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@v1.5.0
+      - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.TEST_PYPI_API_TOKEN }}
           repository_url: https://test.pypi.org/legacy/
