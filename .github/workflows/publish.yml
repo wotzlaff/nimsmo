@@ -17,6 +17,8 @@ jobs:
         package-dir: .
         output-dir: dist
         config-file: "{package}/pyproject.toml"
+      env:
+        CIBW_BUILD: cp38-manylinux_x86_64 cp39-manylinux_x86_64 cp310-manylinux_x86_64
     - name: Publish distribution 📦 to Test PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
