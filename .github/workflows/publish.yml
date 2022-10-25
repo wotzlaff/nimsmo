@@ -15,7 +15,7 @@ jobs:
       uses: pypa/cibuildwheel@v2.11.1
       env:
         CIBW_ENVIRONMENT_LINUX: CHOOSENIM_CHOOSE_VERSION="1.6.8"
-        CIBW_BEFORE_ALL_LINUX: curl https://nim-lang.org/choosenim/init.sh -sSf | sh -y
+        CIBW_BEFORE_ALL_LINUX: sh -c "$(curl https://nim-lang.org/choosenim/init.sh -sSf)" -y
       with:
         package-dir: .
         output-dir: wheelhouse
