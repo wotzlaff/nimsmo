@@ -3,7 +3,7 @@ name: Publish Python module to TestPyPI
 on: push
 
 jobs:
-  python_ci:
+  build_wheels:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
