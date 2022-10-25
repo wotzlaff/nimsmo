@@ -3,6 +3,7 @@
 !*.*
 __pycache__/
 build/
+dist/
 nimsmo.*.so
 nimsmo.egg-info/
 .vscode/

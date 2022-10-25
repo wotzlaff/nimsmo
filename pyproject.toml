@@ -3,7 +3,7 @@ name = "nimsmo"
 version = "0.1.2"
 description = ""
 authors = ["Nico Strasdat <Nico.Strasdat@tu-dresden.de>"]
-build = "build.py"
+build = "build_nim.py"
 
 [tool.poetry.dependencies]
 python = "^3.8"
