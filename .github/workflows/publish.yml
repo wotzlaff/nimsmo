@@ -17,6 +17,7 @@ jobs:
         CIBW_BUILD: cp38-manylinux_x86_64 cp39-manylinux_x86_64 cp310-manylinux_x86_64
         CIBW_ENVIRONMENT_LINUX: CHOOSENIM_CHOOSE_VERSION="1.6.8" PATH="/root/.nimble/bin:$PATH"
         CIBW_BEFORE_ALL_LINUX: sh -c "curl -O https://nim-lang.org/choosenim/init.sh && sh init.sh -y"
+        CIBW_BEFORE_BUILD: nimble install
       with:
         package-dir: .
         output-dir: wheelhouse
