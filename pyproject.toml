@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nimsmo"
-version = "0.1.5"
+version = "0.1.6"
 description = ""
 readme = "README.md"
 authors = ["Nico Strasdat <Nico.Strasdat@tu-dresden.de>"]
@@ -14,8 +14,8 @@ nython = "^0.1.1"
 
 [build-system]
 requires = [
-  "setuptools",
+  "setuptools>=52.0.0",
   "poetry-core>=1.0.0",
-  "nython",
+  "nython>=0.0.1",
 ]
 build-backend = "poetry.core.masonry.api"
