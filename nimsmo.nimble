@@ -1,4 +1,4 @@
-version = "0.1.3a1"
+version = "0.1.4"
 author = "Nico Strasdat"
 description = "Nim implementation of a SMO for the training of SVMs"
 license = "no license"
