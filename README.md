@@ -14,6 +14,12 @@ nim r -d:release examples/smo_test.nim
 
 ## Installation of python module
 
+### from PyPi
+```
+pip install nimsmo
+```
+
+### from source
 First, install dependencies:
 ```
 conda install poetry
