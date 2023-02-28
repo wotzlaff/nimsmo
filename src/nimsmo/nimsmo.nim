@@ -54,7 +54,7 @@ proc solveClassification*(
   let res = smo(
     p,
     verbose = verbose,
-    shrinkingPeriod = if shrinkingPeriod > 0: shrinkingPeriod else: n,
+    shrinkingPeriod = shrinkingPeriod,
     tol = tol,
     maxSteps = maxSteps,
     logObjective = logObjective,
@@ -114,7 +114,7 @@ proc solveRegression*(
   let res = smo(
     p,
     verbose = verbose,
-    shrinkingPeriod = if shrinkingPeriod >= 0: shrinkingPeriod else: n,
+    shrinkingPeriod = shrinkingPeriod,
     tol = tol,
     maxSteps = maxSteps,
     logObjective = logObjective,
