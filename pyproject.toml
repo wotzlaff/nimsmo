@@ -4,7 +4,10 @@ version = "0.1.6"
 description = ""
 readme = "README.md"
 authors = ["Nico Strasdat <Nico.Strasdat@tu-dresden.de>"]
-build = "build_nim.py"
+
+[tool.poetry.build]
+script = "build_nim.py"
+generate-setup-file = true
 
 [tool.poetry.dependencies]
 python = "^3.8"
